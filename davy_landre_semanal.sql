@@ -1,8 +1,8 @@
---dois últimos fechamentos acima da mm21
---inclinação da mm21 para cima
---minima do último candle menor que a mínima dos outros dois anteriores
+--dois ï¿½ltimos fechamentos acima da mm21
+--inclinaï¿½ï¿½o da mm21 para cima
+--minima do ï¿½ltimo candle menor que a mï¿½nima dos outros dois anteriores
 
-declare @d1 as datetime = '2016-12-26', @d2 as datetime = '2017-1-2', @d3 as datetime = '2017-1-9'
+declare @d1 as datetime = '2017-1-2', @d2 as datetime = '2017-1-9', @d3 as datetime = '2017-1-16'
 
 select c3.codigo
 from 
@@ -34,6 +34,6 @@ inner join
 
 ON c3.codigo = c2.codigo
 
-where c3.ValorMinimo < c1.ValorMinimo --|menor mínima dos últimos 3 períodos
+where c3.ValorMinimo < c1.ValorMinimo --|menor mï¿½nima dos ï¿½ltimos 3 perï¿½odos
 and c3.ValorMinimo < c2.ValorMinimo	  --|
-and c2.Valor < c3.Valor --média ascedente
+and c2.Valor < c3.Valor --mï¿½dia ascedente

@@ -1,4 +1,6 @@
-declare @dataAnterior as datetime = '2017-1-2', @dataAtual as datetime = '2017-1-9', @numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
+declare @dataAnterior as datetime = '2017-1-9', @dataAtual as datetime = '2017-1-16',
+--@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
+@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
 select sobrevendido.Codigo, Data
 FROM
 (SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
@@ -48,18 +50,18 @@ GROUP BY IFR.CODIGO) as sobrevendido INNER JOIN
 		and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo)
 		--and mm10.Tipo = 'MMA'
 		--and mm10.NumPeriodos = 10
-		--NÃO ESTÁ TOCANDO A MMA 10
+		--Nï¿½O ESTï¿½ TOCANDO A MMA 10
 		--and not (mm10.Valor between c.ValorMinimo and c.ValorFechamento)
 		--and mm21.Tipo = 'MMA'
 		--and mm21.NumPeriodos = 21
-		--NÃO ESTÁ TOCANDO A MMA 21
+		--Nï¿½O ESTï¿½ TOCANDO A MMA 21
 		--and not (mm21.Valor between c.ValorMinimo and c.ValorFechamento)
 
 	) as p2
 	on p1.Codigo = p2.Codigo
-	--NÃO ESTÁ CONTIDO NO CANDLE ANTERIOR
+	--Nï¿½O ESTï¿½ CONTIDO NO CANDLE ANTERIOR
 	where NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
-	--não tem média OU acima da média de 200 OU fechou acima da máxima do candle de p1
+	--nï¿½o tem mï¿½dia OU acima da mï¿½dia de 200 OU fechou acima da mï¿½xima do candle de p1
 	AND (ValorMM200 IS NULL OR p2.ValorFechamento > ValorMM200 OR  P2.ValorFechamento >  P1.ValorMaximo)
 ) as atual on sobrevendido.Codigo = atual.Codigo
 order by Data desc
