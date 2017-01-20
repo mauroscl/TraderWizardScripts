@@ -2,7 +2,7 @@
 
 
 --PONTO CONTINUO MMA 10
-declare @dataAnterior as datetime = '2017-1-5', @dataAtual as datetime = '2017-1-6'
+declare @dataAnterior as datetime = '2017-1-18', @dataAtual as datetime = '2017-1-19'
 
 select pc10.codigo pc10, pc21.codigo as pc21
 from 
@@ -94,7 +94,7 @@ order by  case when pc21.Codigo is null then 0 else 1 end, pc10.Codigo, pc21.Cod
 ----SEMANAL
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2016-12-12', @dataFinal as datetime = '2016-12-19'
+DECLARE @dataInicial as datetime = '2016-12-26', @dataFinal as datetime = '2017-1-2'
 
 select pc10.codigo pc10, pc21.codigo as pc21
 from 

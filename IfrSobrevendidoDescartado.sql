@@ -28,7 +28,7 @@ WHERE Codigo = ''
 INSERT INTO IfrSobrevendidoDescartadoSemanal
 (Codigo, [Data])
 values
-('HYPE3','2017-1-2')
+('NATU3','2017-1-9')
 
 UPDATE IfrSobrevendidoDescartadoSemanal SET [Data] = ''
 WHERE Codigo = ''
