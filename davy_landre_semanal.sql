@@ -1,6 +1,6 @@
---dois �ltimos fechamentos acima da mm21
---inclina��o da mm21 para cima
---minima do �ltimo candle menor que a m�nima dos outros dois anteriores
+--dois últimos fechamentos acima da mm21
+--inclinação da mm21 para cima
+--minima do último candle menor que a mínima dos outros dois anteriores
 
 declare @d1 as datetime = '2017-1-2', @d2 as datetime = '2017-1-9', @d3 as datetime = '2017-1-16'
 
@@ -34,6 +34,6 @@ inner join
 
 ON c3.codigo = c2.codigo
 
-where c3.ValorMinimo < c1.ValorMinimo --|menor m�nima dos �ltimos 3 per�odos
+where c3.ValorMinimo < c1.ValorMinimo --|menor mínima dos últimos 3 períodos
 and c3.ValorMinimo < c2.ValorMinimo	  --|
-and c2.Valor < c3.Valor --m�dia ascedente
+and c2.Valor < c3.Valor --média ascedente
