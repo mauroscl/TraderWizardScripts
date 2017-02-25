@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2017-1-9', @dataAtual as datetime = '2017-1-16',
+declare @dataAnterior as datetime = '2017-2-6', @dataAtual as datetime = '2017-2-13',
 --@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 @numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
 select sobrevendido.Codigo, Data
@@ -8,7 +8,7 @@ FROM IFR_Semanal IFR
 INNER JOIN Cotacao_Semanal C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
 WHERE ifr.NumPeriodos = @numPeriodos
 and IFR.Valor <= @valorSobrevendido
-AND IFR.CODIGO NOT LIKE '%34'
+AND IFR.CODIGO NOT LIKE '%34'		
 AND C.Titulos_Total >=500000
 AND C.Valor_Total >= 5000000
 AND C.Negocios_Total >= 500

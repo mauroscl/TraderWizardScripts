@@ -1,4 +1,4 @@
-declare @d1 as datetime = '2017-1-18', @d2 as datetime = '2017-1-19', @titulosMinimo as int = 100000, @valorMinimo as int = 1000000, @negociosMinimo as int = 100
+declare @d1 as datetime = '2017-2-8', @d2 as datetime = '2017-2-9', @titulosMinimo as int = 100000, @valorMinimo as int = 1000000, @negociosMinimo as int = 100
 
 select p10.codigo as p10, p21.codigo as p21
 from 

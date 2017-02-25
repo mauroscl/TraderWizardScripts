@@ -2,7 +2,7 @@
 
 
 --PONTO CONTINUO MMA 10
-declare @dataAnterior as datetime = '2017-1-19', @dataAtual as datetime = '2017-1-20'
+declare @dataAnterior as datetime = '2017-2-22', @dataAtual as datetime = '2017-2-23'
 
 select pc10.codigo pc10, pc21.codigo as pc21
 from 
@@ -71,23 +71,4 @@ AND  (p2.ValorFechamento > p2.Valor OR P2.ValorFechamento > P1.ValorMaximo)
 
 ) as pc21 on pc10.codigo = pc21.codigo
 order by  case when pc21.Codigo is null then 0 else 1 end, pc10.Codigo, pc21.Codigo
-
---entrada no ifr < 10
---select p2.codigo, 
---CASE WHEN p2.valorfechamento > (p2.valorminimo + Round((p2.valormaximo - p2.valorminimo) / 2,2)) THEN 'COMPRADOR' ELSE 'VENDEDOR' END AS VIES
---from 
---(select c.Codigo
---from cotacao c inner join IFR_Diario ifr on c.Codigo = ifr.Codigo and c.Data = ifr.Data
---where c.Data = '2016-8-16'
---and ifr.NumPeriodos = 2
---and ifr.Valor > 10) p1 
---inner join 
---(select c.Codigo, ValorFechamento, ValorMinimo, ValorMaximo
---from cotacao c inner join IFR_Diario ifr on c.Codigo = ifr.Codigo and c.Data = ifr.Data
---where c.Data = '2016-8-17'
---AND C.Titulos_Total >= 100000
---AND C.ValorFechamento >= 1
---and ifr.NumPeriodos = 2
---and ifr.Valor <= 10) p2 
---on p1.codigo = p2.codigo
 

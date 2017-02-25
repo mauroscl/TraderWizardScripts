@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2017-1-19', @dataAtual as datetime = '2017-1-20',
+declare @dataAnterior as datetime = '2017-2-22', @dataAtual as datetime = '2017-2-23',
 @numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
 --@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 select sobrevendido.Codigo, Data

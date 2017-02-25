@@ -1,10 +1,10 @@
 ----SEMANAL
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2017-1-9', @dataFinal as datetime = '2017-1-16'
+DECLARE @dataInicial as datetime = '2017-2-6', @dataFinal as datetime = '2017-2-13'
 
 select pc10.codigo pc10, pc21.codigo as pc21
-from 
+from			
 (select p2.codigo
 from 
 (

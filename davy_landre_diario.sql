@@ -2,11 +2,11 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2017-1-18', @d2 as datetime = '2017-1-19', @d3 as datetime = '2017-1-20'
+declare @d1 as datetime = '2017-2-21', @d2 as datetime = '2017-2-22', @d3 as datetime = '2017-2-23'
 
-select c3.codigo
+select c3.codigo, c3.candle, c3.distancia
 from 
-(
+(	
 	select Codigo, ValorMinimo
 	FROM Cotacao 
 	WHERE Data = @d1
@@ -22,7 +22,10 @@ inner join
 ON c1.codigo = c2.codigo
 inner join
 (
-	select C.Codigo, ValorMinimo, M21.Valor
+	select C.Codigo, ValorMinimo, M21.Valor,
+	ROUND((C.ValorMaximo / M21.Valor - 1) * 10, 3)  AS distancia,
+	CASE WHEN C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2)) THEN 'COMPRADOR' ELSE 'VENDEDOR' END AS candle
+
 	FROM Cotacao C 
 	INNER JOIN Media_Diaria M21 ON C.Codigo = M21.Codigo AND C.Data = M21.Data AND M21.Tipo = 'MMA' AND M21.NumPeriodos = 21
 	INNER JOIN Media_Diaria M10 ON C.Codigo = M10.Codigo AND C.Data = M10.Data AND M10.Tipo = 'MMA' AND M10.NumPeriodos = 10
@@ -31,6 +34,8 @@ inner join
 	AND C.Valor_Total >= 1000000
 	AND C.Negocios_Total >= 100
 	AND C.ValorFechamento > M21.Valor
+	--FECHOU ACIMA DA METADE DA AMPLITUDE
+	--AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2)) 
 	AND NOT M21.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
 	AND NOT M10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
 ) as c3
