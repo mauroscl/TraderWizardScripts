@@ -1,7 +1,8 @@
-declare @dataAnterior as datetime = '2017-2-22', @dataAtual as datetime = '2017-2-23',
-@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
---@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
-select sobrevendido.Codigo, Data
+declare @dataAnterior as datetime = '2017-3-16', @dataAtual as datetime = '2017-3-17',
+--@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
+@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
+
+select sobrevendido.Codigo, Data, atual.ValorMM21, atual.AlvoAproximado
 FROM
 (SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
 FROM IFR_DIARIO IFR 
@@ -19,6 +20,7 @@ AND NOT EXISTS
 	from IFR_Diario IfrSobreComprado 
 	WHERE IFR.Codigo = IfrSobreComprado.Codigo
 	AND IfrSobreComprado.[Data] > IFR.[Data]
+	AND IfrSobreComprado.NumPeriodos = @numPeriodos
 	AND IfrSobreComprado.Valor >= @valorSobreComprado
 )
 AND NOT EXISTS 
@@ -30,7 +32,7 @@ AND NOT EXISTS
 )
 GROUP BY IFR.CODIGO) as sobrevendido INNER JOIN
 (
-	select p1.Codigo
+	select p1.Codigo, p2.ValorMM21, ROUND( (P2.ValorMaximo - P2.ValorMinimo) + P2.ValorMaximo, 2) as AlvoAproximado
 	from
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento
@@ -38,9 +40,9 @@ GROUP BY IFR.CODIGO) as sobrevendido INNER JOIN
 		where c.Data = @dataAnterior) as p1
 		inner join
 	(
-		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, mm200.Valor as ValorMM200
+		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, mm200.Valor as ValorMM200, ROUND(mm21.Valor, 2) as ValorMM21
 		from cotacao c-- inner join Media_Diaria mm10 on c.Codigo = mm10.Codigo and c.Data = mm10.Data
-		--inner join Media_Diaria mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data
+		inner join Media_Diaria mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
 		left join Media_Diaria mm200 on c.Codigo = mm200.Codigo and c.Data = mm200.Data and mm200.Tipo = 'MMA' and mm200.NumPeriodos = 200
 
 		where c.Data = @dataAtual

@@ -1,37 +1,43 @@
-declare @dataAnterior as datetime = '2017-2-6', @dataAtual as datetime = '2017-2-13',
+declare @dataAnterior as datetime = '2017-3-6', @dataAtual as datetime = '2017-3-13',
 --@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 @numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
 select sobrevendido.Codigo, Data
 FROM
-(SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
-FROM IFR_Semanal IFR 
-INNER JOIN Cotacao_Semanal C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
-WHERE ifr.NumPeriodos = @numPeriodos
-and IFR.Valor <= @valorSobrevendido
-AND IFR.CODIGO NOT LIKE '%34'		
-AND C.Titulos_Total >=500000
-AND C.Valor_Total >= 5000000
-AND C.Negocios_Total >= 500
-and c.ValorFechamento >= 1
-AND NOT EXISTS 
 (
-	select 1 
-	from IFR_Semanal IfrSobreComprado 
-	WHERE IFR.NumPeriodos = @numPeriodos
-	AND IFR.Codigo = IfrSobreComprado.Codigo
-	AND IfrSobreComprado.[Data] > IFR.[Data]
-	AND IfrSobreComprado.Valor >= @valorSobreComprado
-)
-AND NOT EXISTS 
-(
-	SELECT 1 
-	FROM IfrSobrevendidoDescartadoSemanal ISDS
-	WHERE IFR.Codigo = ISDS.Codigo
-	and ISDS.[Data] > IFR.[Data]
-)
+	--ESTA PROJEÇÃO RETORNAR OS IFR SOBREVENDIDOS
+	SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
+	FROM IFR_Semanal IFR 
+	INNER JOIN Cotacao_Semanal C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
+	WHERE ifr.NumPeriodos = @numPeriodos
+	and IFR.Valor <= @valorSobrevendido
+	AND IFR.CODIGO NOT LIKE '%34'		
+	AND C.Titulos_Total >=500000
+	AND C.Valor_Total >= 5000000
+	AND C.Negocios_Total >= 500
+	and c.ValorFechamento >= 1
+	AND NOT EXISTS 
+	(
+		--NÃO EXISTE IFR SOBRECOMPRADO POSTERIOR
+		select 1 
+		from IFR_Semanal IfrSobreComprado 
+		WHERE IfrSobreComprado.NumPeriodos = @numPeriodos
+		AND IFR.Codigo = IfrSobreComprado.Codigo
+		AND IfrSobreComprado.[Data] > IFR.[Data]
+		AND IfrSobreComprado.Valor >= @valorSobreComprado
+	)
+	AND NOT EXISTS 
+	(
+		--NAO ESTÁ DESCARTADO
+		SELECT 1 
+		FROM IfrSobrevendidoDescartadoSemanal ISDS
+		WHERE IFR.Codigo = ISDS.Codigo
+		and ISDS.[Data] > IFR.[Data]
+	)
 
-GROUP BY IFR.CODIGO) as sobrevendido INNER JOIN
+	GROUP BY IFR.CODIGO
+) as sobrevendido INNER JOIN
 (
+	--ESTA PROJECAO RETORNA OS ATIVOS NO ÚLTIMO PERÍODO
 	select p1.Codigo
 	from
 	(

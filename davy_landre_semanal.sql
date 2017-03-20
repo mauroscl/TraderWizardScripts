@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2017-1-30', @d2 as datetime = '2017-2-6', @d3 as datetime = '2017-2-13'
+declare @d1 as datetime = '2017-3-6', @d2 as datetime = '2017-3-13', @d3 as datetime = '2017-3-20'
 
 select c3.codigo, c3.candle, c3.distancia
 from 
@@ -14,7 +14,7 @@ from
 ) as c1
 inner join 
 (
-	select C.Codigo, ValorMinimo, m.Valor
+	select C.Codigo, ValorMinimo, m.Valor as Media
 	FROM Cotacao_Semanal C INNER JOIN Media_Semanal M ON C.Codigo = M.Codigo AND C.Data = M.Data AND M.Tipo = 'MMA' AND M.NumPeriodos = 21
 	WHERE C.Data = @d2
 	AND C.ValorFechamento > M.Valor
@@ -22,7 +22,7 @@ inner join
 ON c1.codigo = c2.codigo
 inner join
 (
-	select C.Codigo, ValorMinimo, m21.Valor, 
+	select C.Codigo, ValorMinimo, m21.Valor AS Media, 
 	ROUND((C.ValorMaximo / M21.Valor - 1) * 10, 3)  AS distancia,
 	CASE WHEN C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2)) THEN 'COMPRADOR' ELSE 'VENDEDOR' END AS candle
 	FROM Cotacao_Semanal C 
@@ -43,4 +43,4 @@ ON c3.codigo = c2.codigo
 
 where c3.ValorMinimo < c1.ValorMinimo --|menor mínima dos últimos 3 períodos
 and c3.ValorMinimo < c2.ValorMinimo	  --|
-and c2.Valor < c3.Valor --média ascedente
+and c2.Media < c3.Media --média ascedente

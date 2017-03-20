@@ -2,7 +2,7 @@
 
 
 --PONTO CONTINUO MMA 10
-declare @dataAnterior as datetime = '2017-2-22', @dataAtual as datetime = '2017-2-23'
+declare @dataAnterior as datetime = '2017-3-15', @dataAtual as datetime = '2017-3-16'
 
 select pc10.codigo pc10, pc21.codigo as pc21
 from 
