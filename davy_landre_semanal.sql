@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2017-3-6', @d2 as datetime = '2017-3-13', @d3 as datetime = '2017-3-20'
+declare @d1 as datetime = '2017-3-27', @d2 as datetime = '2017-4-3', @d3 as datetime = '2017-4-10'
 
 select c3.codigo, c3.candle, c3.distancia
 from 
