@@ -2,7 +2,7 @@
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2017-4-10', @dataFinal as datetime = '2017-4-17'
+DECLARE @dataInicial as datetime = '2017-6-5', @dataFinal as datetime = '2017-6-12'
 
 select pc10.codigo pc10, pc10.percentual_volume, pc21.codigo as pc21, pc21.percentual_volume
 from			
@@ -17,7 +17,7 @@ from
 	AND C.ValorMaximo >= M.Valor
 ) p1
 inner join 
-(
+(	
 	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo, M.Valor, c.Titulos_Total, c.Titulos_Total / MVOL.Valor as percentual_volume
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 10
@@ -33,12 +33,13 @@ inner join
 )  p2
 on p1.codigo = p2.codigo
 WHERE 
-(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo )
+(P2.ValorFechamento > P2.ValorAbertura OR P2.ValorMaximo > P1.ValorMaximo )
+--NAO ESTA CONTIDO NO CANDLE ANTERIOR
 AND NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
 --FECHOU ACIMA DA MÉDIA OU ACIMA DA MÁXIMA DO CANDLE ANTERIOR
 AND  (p2.ValorFechamento > p2.Valor OR P2.ValorFechamento > P1.ValorMaximo)
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total)
+AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo)
 ) as pc10
 
 full outer join
@@ -69,12 +70,13 @@ inner join
 )  p2
 on p1.codigo = p2.codigo
 WHERE 
-(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo )
-AND NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
+--(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo ) AND 
+--NAO ESTA CONTIDO NO CANDLE ANTERIOR
+NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
 --FECHOU ACIMA DA MÉDIA OU ACIMA DA MÁXIMA DO CANDLE ANTERIOR
 AND  (p2.ValorFechamento > p2.Valor OR P2.ValorFechamento > P1.ValorMaximo)
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total)
+AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo)
 ) as pc21
 on pc10.codigo = pc21.codigo
 order by  case when pc21.Codigo is null then 0 else 1 end, pc10.Codigo, pc21.Codigo

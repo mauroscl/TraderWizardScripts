@@ -1,8 +1,5 @@
-ROLLBACK
-BEGIN TRAN
-commit
 
-declare @data as datetime = '2017-4-25', @dataAnterior as datetime = '2017-04-24'
+declare @data as datetime = '2017-6-15', @dataAnterior as datetime = '2017-6-14'
 DELETE
 FROM Cotacao
 WHERE DATA = @data

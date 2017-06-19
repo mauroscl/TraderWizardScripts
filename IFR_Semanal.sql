@@ -1,9 +1,9 @@
-declare @dataAnterior as datetime = '2017-4-10', @dataAtual as datetime = '2017-4-17',
-@percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0,
+declare @dataAnterior as datetime = '2017-6-5', @dataAtual as datetime = '2017-6-12',
+@percentualMinimoVolume as float = 0.8,-- @percentualDesejadoVolume as float = 1.0,
 
---@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
-@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
-select sobrevendido.Codigo, Data, atual.ValorMM21, atual.AlvoAproximado, atual.percentual_volume
+@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
+--@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
+select sobrevendido.Codigo, Data, atual.ValorMM21, atual.AlvoAproximado1, atual.AlvoAproximado2, atual.percentual_volume, percentual_candle
 FROM
 (
 	--ESTA PROJEÇÃO RETORNAR OS IFR SOBREVENDIDOS
@@ -40,7 +40,8 @@ FROM
 ) as sobrevendido INNER JOIN
 (
 	--ESTA PROJECAO RETORNA OS ATIVOS NO ÚLTIMO PERÍODO
-	select p1.Codigo, p2.ValorMM21, ROUND( (P2.ValorMaximo - P2.ValorMinimo) + P2.ValorMaximo, 2) as AlvoAproximado, p2.percentual_volume
+	select p1.Codigo, p2.ValorMM21, ROUND( (P2.ValorMaximo - P2.ValorMinimo) + P2.ValorMaximo, 2) as AlvoAproximado1, 
+	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume, p2.percentual_candle
 	from
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, c.Titulos_Total
@@ -49,7 +50,9 @@ FROM
 	) as p1
 	inner join
 	(
-		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, mm200.Valor as ValorMM200, ROUND(mm21.Valor, 2) as ValorMM21, c.Titulos_Total, (c.Titulos_Total / mvol.Valor) as percentual_volume
+		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, mm200.Valor as ValorMM200, 
+		ROUND(mm21.Valor, 2) as ValorMM21, c.Titulos_Total, (c.Titulos_Total / mvol.Valor) as percentual_volume,
+		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 		from Cotacao_Semanal c 
 		--inner join Media_Semanal mm10 on c.Codigo = mm10.Codigo and c.Data = mm10.Data
 		inner join Media_Semanal mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
@@ -77,7 +80,7 @@ FROM
 	--n�o tem m�dia OU acima da m�dia de 200 OU fechou acima da m�xima do candle de p1
 	--AND (ValorMM200 IS NULL OR p2.ValorFechamento > ValorMM200 OR  P2.ValorFechamento >  P1.ValorMaximo)
 	--SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-	AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total)
+	AND (/*P2.percentual_volume  >= @percentualDesejadoVolume OR */ p2.percentual_candle >= 0.75 OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo)
 
 ) as atual on sobrevendido.Codigo = atual.Codigo
 order by Data desc
