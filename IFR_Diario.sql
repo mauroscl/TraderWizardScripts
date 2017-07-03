@@ -1,8 +1,8 @@
-declare @dataAnterior as datetime = '2017-6-14', @dataAtual as datetime = '2017-6-16',
+declare @dataAnterior as datetime = '2017-6-29', @dataAtual as datetime = '2017-6-30',
 @percentualMinimoVolume as float = 0.8,-- @percentualDesejadoVolume as float = 1.0
 
---@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
-@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
+@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
+--@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 
 select sobrevendido.Codigo, Data, atual.ValorMM21, atual.AlvoAproximado1, atual.AlvoAproximado2, atual.percentual_volume, percentual_candle
 FROM

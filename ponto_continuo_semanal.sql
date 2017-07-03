@@ -2,15 +2,15 @@
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2017-6-5', @dataFinal as datetime = '2017-6-12'
+DECLARE @dataInicial as datetime = '2017-6-19', @dataFinal as datetime = '2017-6-26'
 
-select pc10.codigo pc10, pc10.percentual_volume, pc21.codigo as pc21, pc21.percentual_volume
+select pc10.codigo pc10, pc10.percentual_volume, pc10.distancia, pc21.codigo as pc21, pc21.percentual_volume, pc21.distancia
 from			
-(select p2.codigo, p2.percentual_volume
+(select p2.codigo, p2.percentual_volume, p2.distancia
 from 
 (
 	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total
-	from Cotacao_Semanal c inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data
+	from Cotacao_Semanal c inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data	
 	where c.Data = @dataInicial
 	and m.Tipo = 'MMA'
 	AND M.NumPeriodos = 10
@@ -18,14 +18,16 @@ from
 ) p1
 inner join 
 (	
-	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo, M.Valor, c.Titulos_Total, c.Titulos_Total / MVOL.Valor as percentual_volume
+	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo, M10.Valor, c.Titulos_Total, c.Titulos_Total / MVOL.Valor as percentual_volume, 
+	ROUND((C.ValorMaximo / m21.Valor - 1) * 100, 3)  AS distancia
 	from Cotacao_Semanal c 
-	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 10
+	inner join Media_Semanal m10 on c.Codigo = m10.Codigo and c.Data = m10.Data and m10.Tipo = 'MMA' AND M10.NumPeriodos = 10
+	inner join Media_Semanal m21 on c.Codigo = m21.Codigo and c.Data = m21.Data and m21.Tipo = 'MMA' AND M21.NumPeriodos = 21
 	inner join Media_Semanal MVOL on c.Codigo = MVOL.Codigo and c.Data = MVOL.Data and MVOL.Tipo = 'VMA' AND MVOL.NumPeriodos = 21
 	where c.Data = @dataFinal
 	AND C.Titulos_Total >= 500000
 	AND C.ValorFechamento >= 1
-	AND M.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
+	AND M10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
 	--FECHOU ACIMA DA METADE DA AMPLITUDE
 	AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2))
 	--VOLUME MAIOR OU IGUAL A 80% DA MÉDIA DO VOLUME
@@ -45,7 +47,7 @@ AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p
 full outer join
 --PONTO CONTINIUO (21)
 
-(select p2.codigo, p2.percentual_volume
+(select p2.codigo, p2.percentual_volume, p2.distancia
 from 
 (
 	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total
@@ -56,7 +58,8 @@ from
 ) p1
 inner join 
 (
-	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo, M.Valor, c.Titulos_Total, c.Titulos_Total / MVOL.Valor as percentual_volume
+	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo, M.Valor, c.Titulos_Total, c.Titulos_Total / MVOL.Valor as percentual_volume,
+	ROUND((C.ValorMaximo / m.Valor - 1) * 100, 3)  AS distancia
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 21
 	inner join Media_Semanal MVOL on c.Codigo = MVOL.Codigo and c.Data = MVOL.Data and MVOL.Tipo = 'VMA' AND MVOL.NumPeriodos = 21

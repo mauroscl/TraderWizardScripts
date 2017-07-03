@@ -2,7 +2,7 @@
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 --PONTO CONTINUO MMA 17
-declare @dataAnterior as datetime = '2017-6-14', @dataAtual as datetime = '2017-6-16'
+declare @dataAnterior as datetime = '2017-6-29', @dataAtual as datetime = '2017-6-30'
 
 select pc10.codigo pc10, pc10.percentual_volume, pc10.distancia, pc21.codigo as pc21, pc21.	percentual_volume, pc21.distancia
 from		

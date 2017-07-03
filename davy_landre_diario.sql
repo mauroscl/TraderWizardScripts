@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2017-6-13', @d2 as datetime = '2017-6-14', @d3 as datetime = '2017-6-16',
+declare @d1 as datetime = '2017-6-28', @d2 as datetime = '2017-6-29', @d3 as datetime = '2017-6-30',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 
@@ -25,7 +25,7 @@ ON c1.codigo = c2.codigo
 inner join
 (
 	select C.Codigo, C.ValorMinimo, M21.Valor,
-	ROUND((C.ValorMaximo / M21.Valor - 1) * 10, 3)  AS distancia,
+	ROUND((C.ValorMaximo / M21.Valor - 1) * 100, 3)  AS distancia,
 	CASE WHEN C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2)) THEN 'COMPRADOR' ELSE 'VENDEDOR' END AS candle,
 	c.Titulos_Total, c.Titulos_Total / MVOL.Valor as percentual_volume,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle

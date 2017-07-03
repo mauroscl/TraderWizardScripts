@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2017-6-5', @dataAtual as datetime = '2017-6-12',
+declare @dataAnterior as datetime = '2017-6-19', @dataAtual as datetime = '2017-6-26',
 @percentualMinimoVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 SELECT P2.Codigo, P2.Titulos_Total, P2.percentual_volume, P2.distancia
@@ -29,6 +29,6 @@ INNER JOIN
 ) AS P2
 ON P1.Codigo = P2.Codigo
 WHERE NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
-AND (P2.percentual_volume  >= @percentualDesejadoVolume OR (p1.percentual_volume >= @percentualMinimoVolume AND P1.percentual_candle >= 0.5 AND p2.percentual_volume >= @percentualMinimoVolume))
+AND (P2.percentual_volume  >= @percentualDesejadoVolume OR (p1.percentual_volume >= @percentualMinimoVolume AND P1.percentual_candle >= 0.5))
 
 ORDER BY P2.percentual_volume DESC
