@@ -1,9 +1,10 @@
-declare @dataAnterior as datetime = '2017-6-19', @dataAtual as datetime = '2017-6-26',
+declare @dataAnterior as datetime = '2017-9-25', @dataAtual as datetime = '2017-10-2',
 @percentualMinimoVolume as float = 0.8,-- @percentualDesejadoVolume as float = 1.0,
 
 @numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 --@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
-select sobrevendido.Codigo, Data, atual.ValorMM21, atual.AlvoAproximado1, atual.AlvoAproximado2, atual.percentual_volume, percentual_candle
+select sobrevendido.Codigo, Data, atual.ValorMM21, entrada * 2 - ValorMinimo as alvo1, entrada * 2 - saida as alvo2, atual.percentual_volume, atual.percentual_candle,
+atual.ValorMinimo, atual.ValorMaximo, atual.MM21, atual.Volatilidade, entrada, saida
 FROM
 (
 	--ESTA PROJEÇÃO RETORNAR OS IFR SOBREVENDIDOS
@@ -41,7 +42,9 @@ FROM
 (
 	--ESTA PROJECAO RETORNA OS ATIVOS NO ÚLTIMO PERÍODO
 	select p1.Codigo, p2.ValorMM21, ROUND( (P2.ValorMaximo - P2.ValorMinimo) + P2.ValorMaximo, 2) as AlvoAproximado1, 
-	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume, p2.percentual_candle
+	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume, p2.percentual_candle,
+	p2.ValorMinimo, p2.ValorMaximo, p2.ValorMM21 as MM21, p2.Volatilidade, entrada,
+	ROUND((entrada - (entrada - p2.ValorMinimo) * 1.5) * (1 - Volatilidade * 1.25 / 100) , 2) as saida
 	from
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, c.Titulos_Total
@@ -50,14 +53,18 @@ FROM
 	) as p1
 	inner join
 	(
-		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, mm200.Valor as ValorMM200, 
+		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, dbo.MaxValue(VD.Valor, MVD.Valor) AS Volatilidade,
 		ROUND(mm21.Valor, 2) as ValorMM21, c.Titulos_Total, (c.Titulos_Total / mvol.Valor) as percentual_volume,
-		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
+		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
+		ROUND(c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) , 2) as entrada
 		from Cotacao_Semanal c 
 		--inner join Media_Semanal mm10 on c.Codigo = mm10.Codigo and c.Data = mm10.Data
 		inner join Media_Semanal mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
 		inner join Media_Semanal mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
-		left join Media_Semanal mm200 on c.Codigo = mm200.Codigo and c.Data = mm200.Data and mm200.Tipo = 'MMA' and mm200.NumPeriodos = 200
+		--left join Media_Semanal mm200 on c.Codigo = mm200.Codigo and c.Data = mm200.Data and mm200.Tipo = 'MMA' and mm200.NumPeriodos = 200
+		INNER JOIN VolatilidadeSemanal VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
+		LEFT JOIN MediaVolatilidadeSemanal MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
+
 		where c.Data = @dataAtual
 		--fechou acima da metade do candle
 		and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo)
