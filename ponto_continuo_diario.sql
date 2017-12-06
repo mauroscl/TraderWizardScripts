@@ -1,10 +1,10 @@
 ----DIARIO
-DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @dataAnterior as datetime = '2017-10-18', @dataAtual as datetime = '2017-10-19',
+DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @dataAnterior as datetime = '2017-12-4', @dataAtual as datetime = '2017-12-5',
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 select pc10.codigo pc10, pc10.percentual_volume, pc10.percentual_candle, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
 ROUND((pc10.ValorMaximo  * (1 + pc10.Volatilidade * 1.25 / 100) / pc10.MM21 - 1) * 100, 3) / 10 / pc10.Volatilidade AS distancia,
-pc21.codigo as pc21, pc21.percentual_volume, pc21.percentual_candle, pc21.ValorMinimo, pc21.ValorMaximo, ROUND(pc21.MM21,2) MM21, pc21.Volatilidade,
+pc21.codigo as pc21, pc21.percentual_volume, pc21.percentual_candle, pc21.ValorMinimo, pc21.ValorMaximo, ROUND(pc21.MM21,2) MM21, pc21.Volatilidade,	
 ROUND((pc21.ValorMaximo  * (1 + pc21.Volatilidade * 1.25 / 100) / pc21.MM21 - 1) * 100, 3) / 10 / pc21.Volatilidade AS distancia
 from		
 (select p2.codigo, p2.percentual_volume, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade
@@ -29,6 +29,7 @@ inner join
 	INNER JOIN VolatilidadeDiaria VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
 	LEFT JOIN MediaVolatilidadeDiaria MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
 	where c.Data = @dataAtual
+	AND M10.Valor > M21.Valor
 	AND IFR2.Valor < @ifr2Maximo
 	AND IFR14.Valor < @ifr14Maximo
 	AND C.Titulos_Total >= 100000
@@ -38,17 +39,20 @@ inner join
 	AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2)) 
 	--VOLUME MAIOR OU IGUAL A 80% DA MÉDIA DO VOLUME
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
+
+	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+
 ) p2
 on p1.codigo = p2.codigo
 WHERE 
 --CANDLE COMPRADOR OU QUE SUPEROU A MÁXIMA
-(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo )
+--(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo ) AND  
 --NÃO PERMITIR CANDLE CANTIDO NO ANTERIOR
-AND NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
+--AND NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
 --FECHOU ACIMA DA MÉDIA OU ACIMA DA MÁXIMA DO CANDLE ANTERIOR
-AND  (p2.ValorFechamento > p2.MM10 OR P2.ValorFechamento > P1.ValorMaximo)
+(p2.ValorFechamento > p2.MM10 OR P2.ValorFechamento > P1.ValorMaximo)
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total  OR P2.ValorMaximo > P1.ValorMaximo)
+AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total)
 ) AS pc10
 full outer join
 --PONTO CONTINUO MMA 21
@@ -83,15 +87,20 @@ inner join
 	--VOLUME MAIOR OU IGUAL A 80% DA MÉDIA DO VOLUME
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
 
+	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+
+
 ) p2
 on p1.codigo = p2.codigo
 WHERE 
 --(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo ) AND  
-NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
+--NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo))  AND
+
 --FECHOU ACIMA DA MÉDIA OU ACIMA DA MÁXIMA DO CANDLE ANTERIOR
-AND  (p2.ValorFechamento > p2.Valor OR P2.ValorFechamento > P1.ValorMaximo)
+ (p2.ValorFechamento > p2.Valor OR P2.ValorFechamento > P1.ValorMaximo)
+
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo)
+AND (P2.percentual_volume  >= @percentualDesejadoVolume OR p2.Titulos_Total >= p1.Titulos_Total /* OR P2.ValorMaximo > P1.ValorMaximo*/)
 
 ) as pc21 on pc10.codigo = pc21.codigo
 order by  case when pc21.Codigo is null then 0 else 1 end, pc10.Codigo, pc21.Codigo

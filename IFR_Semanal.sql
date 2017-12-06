@@ -1,8 +1,8 @@
-declare @dataAnterior as datetime = '2017-9-25', @dataAtual as datetime = '2017-10-2',
+declare @dataAnterior as datetime = '2017-11-21', @dataAtual as datetime = '2017-11-27',
 @percentualMinimoVolume as float = 0.8,-- @percentualDesejadoVolume as float = 1.0,
 
-@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
---@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
+--@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
+@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
 select sobrevendido.Codigo, Data, atual.ValorMM21, entrada * 2 - ValorMinimo as alvo1, entrada * 2 - saida as alvo2, atual.percentual_volume, atual.percentual_candle,
 atual.ValorMinimo, atual.ValorMaximo, atual.MM21, atual.Volatilidade, entrada, saida
 FROM
@@ -71,6 +71,9 @@ FROM
 
 		and c.Titulos_Total / mvol.Valor >= @percentualMinimoVolume
 
+		AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+
+
 		--and mm10.Tipo = 'MMA'
 		--and mm10.NumPeriodos = 10
 		--N�O EST� TOCANDO A MMA 10
@@ -83,11 +86,13 @@ FROM
 	) as p2
 	on p1.Codigo = p2.Codigo
 	--N�O EST� CONTIDO NO CANDLE ANTERIOR
-	where NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
+	where --NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
 	--n�o tem m�dia OU acima da m�dia de 200 OU fechou acima da m�xima do candle de p1
 	--AND (ValorMM200 IS NULL OR p2.ValorFechamento > ValorMM200 OR  P2.ValorFechamento >  P1.ValorMaximo)
 	--SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-	AND (/*P2.percentual_volume  >= @percentualDesejadoVolume OR */ p2.percentual_candle >= 0.75 OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo)
+	--AND 
+	
+	(/*P2.percentual_volume  >= @percentualDesejadoVolume OR */ p2.percentual_candle >= 0.75 OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo)
 
 ) as atual on sobrevendido.Codigo = atual.Codigo
 order by Data desc

@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2017-9-25', @d2 as datetime = '2017-10-2', @d3 as datetime = '2017-10-9',
+declare @d1 as datetime = '2017-11-13', @d2 as datetime = '2017-11-21', @d3 as datetime = '2017-11-27',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 select c3.codigo, C3.percentual_candle, C3.percentual_volume,
@@ -41,14 +41,17 @@ inner join
 	AND C.Valor_Total >= 5000000
 	AND C.Negocios_Total >= 500
 	AND C.ValorFechamento > M21.Valor
-	--FECHOU ACIMA DA METADE DA AMPLITUDE
-	--AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2)) 
 	AND NOT M21.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
 	AND NOT M10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
 
 	--VOLUME MAIOR OU IGUAL A 80% DA MÉDIA DO VOLUME
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
+	--FECHOU ACIMA DA METADE DA AMPLITUDE
 	AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2))
+
+	--amplitude do candle maior que 10% da volatilidade
+	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+
 ) as c3
 
 ON c3.codigo = c2.codigo
@@ -59,9 +62,6 @@ and c2.MM21 < c3.MM21 --média ascedente
 
 --amplitude do candle maior que a amplitude do candle anterior
 --AND (C3.ValorMaximo - C3.ValorMinimo) > (C2.ValorMaximo - C2.ValorMinimo)
-
---amplitude do candle maior que 10% da volatilidade
-AND c3.ValorMaximo / c3.ValorMinimo - 1 > c3.Volatilidade / 10
 
 --TERCEIRO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
 --AND (C3.percentual_volume  >= @percentualDesejadoVolume OR C3.Titulos_Total >= C2.Titulos_Total OR C3.percentual_candle >= 0.75)
