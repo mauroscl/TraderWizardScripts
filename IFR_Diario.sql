@@ -1,31 +1,44 @@
-declare @dataAnterior as datetime = '2017-12-5', @dataAtual as datetime = '2017-12-6',
-@percentualMinimoVolume as float = 0.8,-- @percentualDesejadoVolume as float = 1.0
+declare @dataAnterior as datetime = '2018-1-2', @dataAtual as datetime = '2018-1-3',
+@percentualMinimoVolume as float = 0.8--, @percentualDesejadoVolume as float = 1.0
 
 --@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
-@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
+--@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 
 select sobrevendido.Codigo, Data, entrada * 2 - ValorMinimo as alvo1, entrada * 2 - saida as alvo2, atual.percentual_volume, atual.percentual_candle_anterior, atual.percentual_candle_atual,
 atual.ValorMinimo, atual.ValorMaximo, atual.MM21, atual.VolatilidadeMaxima, entrada, saida
 
 FROM
-(SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
-FROM IFR_DIARIO IFR 
-INNER JOIN COTACAO C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
-WHERE IFR.NumPeriodos = @numPeriodos
-AND IFR.Valor <= @valorSobrevendido
-AND IFR.CODIGO NOT LIKE '%34'
-
-AND NOT EXISTS 
 (
-	SELECT 1 
-	FROM IfrSobrevendidoDescartadoDiario ISDD
-	WHERE IFR.Codigo = ISDD.Codigo
-	and ISDD.[Data] >= IFR.[Data]
-)
-GROUP BY IFR.CODIGO) as sobrevendido INNER JOIN
+	SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
+	FROM
+	(
+		SELECT IFR.CODIGO, IFR.DATA
+		FROM IFR_DIARIO IFR
+		INNER JOIN COTACAO C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
+		WHERE IFR.NumPeriodos = 2
+		AND IFR.Valor <= 10
+		AND IFR.CODIGO NOT LIKE '%34'
+		UNION
+		SELECT IFR.CODIGO, IFR.DATA
+		FROM IFR_DIARIO IFR
+		INNER JOIN COTACAO C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
+		WHERE IFR.NumPeriodos = 14
+		AND IFR.Valor <= 35
+		AND IFR.CODIGO NOT LIKE '%34'
+	) IFR
+	WHERE NOT EXISTS 
+	(
+		SELECT 1 
+		FROM IfrSobrevendidoDescartadoDiario ISDD
+		WHERE IFR.Codigo = ISDD.Codigo
+		and ISDD.[Data] >= IFR.[Data]
+	)
+	GROUP BY IFR.CODIGO
+) as sobrevendido INNER JOIN
 (
 	select p1.Codigo, p2.ValorMM21, ROUND( (P2.ValorMaximo - P2.ValorMinimo) + P2.ValorMaximo, 2) as AlvoAproximado1, 
-	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume, p1.percentual_candle as percentual_candle_anterior, p2.percentual_candle percentual_candle_atual,
+	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume, 
+	p1.percentual_candle as percentual_candle_anterior, p2.percentual_candle percentual_candle_atual,
 	p2.ValorMinimo, p2.ValorMaximo, p2.ValorMM21 as MM21, p2.VolatilidadeMinima, p2.VolatilidadeMaxima, entrada,
 	ROUND((entrada - (entrada - p2.ValorMinimo) * 1.5) * (1 - VolatilidadeMaxima * 1.25 / 100) , 2) as saida
 
@@ -46,15 +59,15 @@ GROUP BY IFR.CODIGO) as sobrevendido INNER JOIN
 		from cotacao c
 		inner join Media_Diaria mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
 		inner join Media_Diaria mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
-		--left join Media_Diaria mm200 on c.Codigo = mm200.Codigo and c.Data = mm200.Data and mm200.Tipo = 'MMA' and mm200.NumPeriodos = 200
+		inner join MediaNegociosDiaria MND on c.Codigo = MND.Codigo and c.Data = MND.Data
 		INNER JOIN VolatilidadeDiaria VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
 		LEFT JOIN MediaVolatilidadeDiaria MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
 
 		where c.Data = @dataAtual
 		--fechou acima da metade do candle
 		and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo)
-
 		and c.Titulos_Total / mvol.Valor >= @percentualMinimoVolume
+		and c.Negocios_Total / MND.Valor >= @percentualMinimoVolume
 
 		AND C.Negocios_Total >= 100
 		AND C.Titulos_Total >=100000
@@ -83,12 +96,9 @@ GROUP BY IFR.CODIGO) as sobrevendido INNER JOIN
 	--AND (/*P2.percentual_volume  >= @percentualDesejadoVolume OR */ 
 	--and 
 	p2.percentual_candle >= 0.75 OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo--)
-
+	
 
 ) as atual on sobrevendido.Codigo = atual.Codigo
-
---amplitude do candle maior que 10% da volatilidade
-where atual.ValorMaximo / atual.ValorMinimo - 1 > atual.VolatilidadeMinima / 10
 
 order by Data desc, percentual_volume desc
 

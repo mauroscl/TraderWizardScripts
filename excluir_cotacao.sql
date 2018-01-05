@@ -1,4 +1,4 @@
-declare @data as datetime = '2017-11-28', @dataAnterior as datetime = '2017-11-27'
+declare @data as datetime = '2018-1-2', @dataAnterior as datetime = '2017-12-28'
 DELETE
 FROM Cotacao
 WHERE DATA >= @data
@@ -17,6 +17,10 @@ WHERE DATA >= @data
 
 DELETE
 FROM MediaVolatilidadeDiaria
+WHERE DATA >= @data
+
+DELETE
+FROM MediaNegociosDiaria
 WHERE DATA >= @data
 
 update resumo set Data_Ultima_Cotacao = @dataAnterior
@@ -40,6 +44,11 @@ WHERE DATA >= @data
 DELETE
 FROM MediaVolatilidadeSemanal
 WHERE DATA >= @data
+
+DELETE
+FROM MediaNegociosSemanal
+WHERE DATA >= @data
+
 
 
 

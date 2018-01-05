@@ -2,11 +2,12 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2017-11-13', @d2 as datetime = '2017-11-21', @d3 as datetime = '2017-11-27',
+declare @d1 as datetime = '2017-12-11', @d2 as datetime = '2017-12-18', @d3 as datetime = '2017-12-26',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 select c3.codigo, C3.percentual_candle, C3.percentual_volume,
-ROUND((c3.ValorMaximo  * (1 + c3.Volatilidade * 1.25 / 100) / c3.MM21 - 1) * 100, 3) / 10 / c3.Volatilidade AS distancia
+ROUND((c3.ValorMaximo  * (1 + c3.Volatilidade * 1.25 / 100) / c3.MM21 - 1) * 100, 3) / 10 / c3.Volatilidade AS distancia,
+c3.ValorMinimo, c3.ValorMaximo, c3.Volatilidade
 from 
 (
 	select Codigo, ValorMinimo
