@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2017-12-18', @dataAtual as datetime = '2017-12-26',
+declare @dataAnterior as datetime = '2018-1-8', @dataAtual as datetime = '2018-1-15',
 @percentualMinimoVolume as float = 0.8--, @percentualDesejadoVolume as float = 1.0,
 
 --@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
