@@ -1,8 +1,8 @@
-declare @dataAnterior as datetime = '2018-1-15', @dataAtual as datetime = '2018-1-22',
+declare @dataAnterior as datetime = '2018-1-29', @dataAtual as datetime = '2018-2-5',
 @percentualMinimoVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 SELECT P2.Codigo, P2.Titulos_Total, P1.percentual_volume AS PercentualVolume1, p1.percentual_candle as PercentualCandle1, 
-P2.percentual_volume_quantidade as PercentualVolume2, p2.percentual_candle as PercentualCandle2, p2.percentual_volume_negocios,
+P2.percentual_volume_quantidade, p2.percentual_candle as PercentualCandle2, p2.percentual_volume_negocios,
 ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia,
 P2.ValorMinimo, P2.ValorMaximo, P2.MM21, P2.volatilidade
 FROM
@@ -42,5 +42,7 @@ INNER JOIN
 ON P1.Codigo = P2.Codigo
 WHERE NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
 AND ( dbo.MaxValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios)  >= @percentualDesejadoVolume OR (p1.percentual_volume >= @percentualMinimoVolume AND P1.percentual_candle >= 0.5))
+--DISTANCIA PARA MÉDIA DE 21 PERÍODOS NO MÁXIMO 2.5 vezes a volatilidade
+AND ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade <= 2.5
 
 ORDER BY P2.percentual_volume_quantidade DESC

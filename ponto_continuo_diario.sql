@@ -1,6 +1,6 @@
 ----DIARIO
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, 
-@dataAnterior as datetime = '2018-1-22', @dataAtual as datetime = '2018-1-23',
+@dataAnterior as datetime = '2018-2-8', @dataAtual as datetime = '2018-2-9',
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,

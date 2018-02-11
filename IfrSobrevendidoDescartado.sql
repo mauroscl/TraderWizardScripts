@@ -19,7 +19,7 @@ CREATE TABLE IfrSobrevendidoDescartadoSemanal
 INSERT INTO IfrSobrevendidoDescartadoDiario
 (Codigo, [Data])
 VALUES
-('VVAR11','2018-1-19 00:00:00.000')
+('VALE3','2018-2-9 00:00:00.000')
 
 
 
@@ -37,7 +37,7 @@ WHERE Codigo = ''
 INSERT INTO IfrSobrevendidoDescartadoSemanal
 (Codigo, [Data])
 values
-('HBOR3','2018-1-15 00:00:00.000')
+('SHOW3','2018-2-5 00:00:00.000')
 
 
 UPDATE IfrSobrevendidoDescartadoSemanal SET [Data] = ''

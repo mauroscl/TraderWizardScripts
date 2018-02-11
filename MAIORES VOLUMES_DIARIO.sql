@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-1-24', @dataAtual as datetime = '2018-1-26',
+declare @dataAnterior as datetime = '2018-2-8', @dataAtual as datetime = '2018-2-9',
 @percentualMinimoVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 
@@ -17,7 +17,7 @@ FROM
 INNER JOIN
 (
 	SELECT C.Codigo, C.Titulos_Total, C.ValorMinimo, C.ValorMaximo, M21.Valor as MM21, 
-	(C.Titulos_Total / M.Valor) as percentual_volume_quantidade,
+	C.Titulos_Total / M.Valor as percentual_volume_quantidade,
 	C.Negocios_Total / MND.Valor as percentual_volume_negocios,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle, 
 	dbo.MaxValue(VD.Valor, MVD.Valor) AS Volatilidade

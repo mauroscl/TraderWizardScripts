@@ -1,11 +1,12 @@
-declare @dataAnterior as datetime = '2018-1-23', @dataAtual as datetime = '2018-1-24',
+declare @dataAnterior as datetime = '2018-2-8', @dataAtual as datetime = '2018-2-9',
 @percentualMinimoVolume as float = 0.8--, @percentualDesejadoVolume as float = 1.0
 
 --@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
 --@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 
-select sobrevendido.Codigo, Data, entrada * 2 - ValorMinimo as alvo1, entrada * 2 - saida as alvo2, atual.percentual_volume, atual.percentual_candle_anterior, atual.percentual_candle_atual,
-atual.ValorMinimo, atual.ValorMaximo, atual.MM21, atual.VolatilidadeMaxima, entrada, saida
+select sobrevendido.Codigo, Data, atual.percentual_volume_quantidade, atual.percentual_volume_negocios, atual.percentual_candle_anterior, atual.percentual_candle_atual,
+atual.VolatilidadeMaxima, atual.MM21, atual.ValorMinimo, atual.ValorMaximo, 
+entrada * 2 - ValorMinimo as alvo1, entrada * 2 - saida as alvo2, entrada, saida
 
 FROM
 (
@@ -37,7 +38,7 @@ FROM
 ) as sobrevendido INNER JOIN
 (
 	select p1.Codigo, p2.ValorMM21, ROUND( (P2.ValorMaximo - P2.ValorMinimo) + P2.ValorMaximo, 2) as AlvoAproximado1, 
-	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume, 
+	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume_quantidade, p2.percentual_volume_negocios,
 	p1.percentual_candle as percentual_candle_anterior, p2.percentual_candle percentual_candle_atual,
 	p2.ValorMinimo, p2.ValorMaximo, p2.ValorMM21 as MM21, p2.VolatilidadeMinima, p2.VolatilidadeMaxima, entrada,
 	ROUND((entrada - (entrada - p2.ValorMinimo) * 1.5) * (1 - VolatilidadeMaxima * 1.25 / 100) , 2) as saida
@@ -52,7 +53,9 @@ FROM
 		inner join
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, dbo.MinValue(VD.Valor, MVD.Valor) AS VolatilidadeMinima , dbo.MaxValue(VD.Valor, MVD.Valor) AS VolatilidadeMaxima,
-		ROUND(mm21.Valor, 2) as ValorMM21, c.Titulos_Total, (c.Titulos_Total / mvol.Valor) as percentual_volume,
+		ROUND(mm21.Valor, 2) as ValorMM21, c.Titulos_Total, 
+		C.Titulos_Total / mvol.Valor as percentual_volume_quantidade,
+		C.Negocios_Total / MND.Valor as percentual_volume_negocios,
 		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
 		ROUND(c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) , 2) as entrada
 
@@ -100,6 +103,6 @@ FROM
 
 ) as atual on sobrevendido.Codigo = atual.Codigo
 
-order by Data desc, percentual_volume desc
+order by Data desc, percentual_volume_quantidade desc
 
 

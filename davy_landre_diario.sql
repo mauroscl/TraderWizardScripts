@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2018-1-22', @d2 as datetime = '2018-1-23', @d3 as datetime = '2018-1-24',
+declare @d1 as datetime = '2018-2-7', @d2 as datetime = '2018-2-8', @d3 as datetime = '2018-2-9',
 @percentualMinimoVolume as float = 0.8--, @percentualDesejadoVolume as float = 1.0
 
 select c3.codigo, C3.percentual_candle, C3.percentual_volume,
@@ -65,7 +65,9 @@ where c3.ValorMinimo < c1.ValorMinimo --|menor mínima dos últimos 3 períodos
 and c3.ValorMinimo < c2.ValorMinimo	  --|
 and c2.MM21 < c3.MM21 --média ascedente
 
+--distância do ponto de entrada para a média de 21 nao é mais do que 2,5 x a volatilidade
 AND ROUND((c3.ValorMaximo  * (1 + c3.Volatilidade * 1.25 / 100) / c3.MM21 - 1) * 100, 3) / 10 / c3.Volatilidade <= 2.5
+
 --amplitude do candle maior que a amplitude do candle anterior
 --AND (C3.ValorMaximo - C3.ValorMinimo) > (C2.ValorMaximo - C2.ValorMinimo)
 
