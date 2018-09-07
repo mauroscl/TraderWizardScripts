@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-8-23', @dataAtual as datetime = '2018-8-24',
+declare @dataAnterior as datetime = '2018-9-5', @dataAtual as datetime = '2018-9-6',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 --@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
@@ -12,26 +12,27 @@ FROM
 	SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
 	FROM	
 	(
-		SELECT IFR.CODIGO, IFR.DATA
+		SELECT IFR.CODIGO, IFR.DATA, C.Sequencial
 		FROM IFR_DIARIO IFR
 		INNER JOIN COTACAO C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
 		WHERE IFR.NumPeriodos = 2
 		AND IFR.Valor <= 10
 		AND IFR.CODIGO NOT LIKE '%34'
 		UNION
-		SELECT IFR.CODIGO, IFR.DATA
+		SELECT IFR.CODIGO, IFR.DATA, C.Sequencial
 		FROM IFR_DIARIO IFR
 		INNER JOIN COTACAO C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
 		WHERE IFR.NumPeriodos = 14
 		AND IFR.Valor <= 35
 		AND IFR.CODIGO NOT LIKE '%34'
 	) IFR
-	WHERE NOT EXISTS 
+	WHERE EXISTS 
 	(
 		SELECT 1 
-		FROM IfrSobrevendidoDescartadoDiario ISDD
-		WHERE IFR.Codigo = ISDD.Codigo
-		and ISDD.[Data] >= IFR.[Data]
+		FROM Cotacao C
+		WHERE IFR.Codigo = C.Codigo
+		and C.[Data] = @dataAtual
+		AND C.Sequencial - IFR.Sequencial <= 6
 	)
 	GROUP BY IFR.CODIGO
 ) as sobrevendido INNER JOIN

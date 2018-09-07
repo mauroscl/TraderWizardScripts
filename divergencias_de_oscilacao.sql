@@ -5,28 +5,53 @@ DIA2.VALORFECHAMENTO / (1 + DIA2.OSCILACAO / 100) - DIA1.VALORFECHAMENTO As DIFE
 FROM
 (SELECT CODIGO, VALORFECHAMENTO
 FROM COTACAO 
-WHERE DATA = '2018-2-8') As DIA1 
+WHERE DATA = '2018-9-5') As DIA1 
 INNER JOIN
 (SELECT CODIGO, VALORFECHAMENTO, OSCILACAO
 FROM COTACAO 
-WHERE DATA = '2018-2-9') As DIA2
+WHERE DATA = '2018-9-6') As DIA2
 On DIA1.CODIGO = DIA2.CODIGO
 WHERE ABS(DIA2.OSCILACAO - Round((DIA2.VALORFECHAMENTO / DIA1.VALORFECHAMENTO -1) * 100, 2)) > 0.01
 And DIA1.CODIGO Not Like '%11B'
 And DIA1.CODIGO Not Like '%17'
 
-
+	
 
 --INSERT INTO ATIVOS_DESCONSIDERADOS
 --VALUES
---('FRCG18')
+--('CCMU18')	
 
 --INSERT INTO Feriado
 --(Data, Descricao)
 --VALUES
---('2018-1-25', 'Revolução Constitucionalista')
+--('2018-7-9', 'Revolução Constitucionalista')
 
 --INSERT INTO Split
 --(Codigo, Data, Tipo, QuantidadeAnterior, QuantidadePosterior)
 --values
---('RCSL4', '2018-1-26', 'DESD', 3,1)
+--('MULT3', '2018-7-24', 'DESD', 1,3)
+
+--INSERT INTO Ativo
+--(Codigo, Descricao)
+--values
+--('BIDI4', 'BANCO INTER PN')
+
+--select *
+--from split
+----where codigo = 'MULT3'
+--ORDER BY DATA DESC
+
+--UPDATE SPLIT SET 
+--DATA = '2018-7-23'
+--WHERE CODIGO = 'MULT3'
+--AND DATA = '2018-7-24'
+
+
+--SELECT *
+--FROM COTACAO
+--WHERE DATA = '2018-7-16'
+--AND CODIGO NOT IN (SELECT CODIGO FROM ATIVO)
+
+--SELECT *
+--FROM Cotacao
+--WHERE Codigo = 'CCMU18'

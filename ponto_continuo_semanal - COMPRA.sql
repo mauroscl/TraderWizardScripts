@@ -3,7 +3,7 @@ DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume a
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2018-1-29', @dataFinal as datetime = '2018-2-5'
+DECLARE @dataInicial as datetime = '2018-8-20', @dataFinal as datetime = '2018-8-27'
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_candle, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
 ROUND((pc10.ValorMaximo  * (1 + pc10.Volatilidade * 1.25 / 100) / pc10.MM21 - 1) * 100, 3) / 10 / pc10.Volatilidade AS distancia,
@@ -14,7 +14,7 @@ from
 (select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade
 from 
 (
-	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total
+	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total
 	from Cotacao_Semanal c inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data	
 	where c.Data = @dataInicial
 	and m.Tipo = 'MMA'
@@ -23,11 +23,12 @@ from
 ) p1
 inner join 
 (	
-	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo, M10.Valor, c.Titulos_Total, 
+	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo, M10.Valor, c.Titulos_Total, c.Negocios_Total ,
 	c.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, 
 	C.Negocios_Total / MNS.Valor as percentual_volume_negocios,
 	M21.Valor AS MM21, dbo.MaxValue(VD.Valor, MVD.Valor) AS Volatilidade,
-	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
+	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
+	ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / m21.Valor - 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) as distancia
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m10 on c.Codigo = m10.Codigo and c.Data = m10.Data and m10.Tipo = 'MMA' AND M10.NumPeriodos = 10
 	inner join Media_Semanal m21 on c.Codigo = m21.Codigo and c.Data = m21.Data and m21.Tipo = 'MMA' AND M21.NumPeriodos = 21
@@ -55,17 +56,11 @@ inner join
 )  p2
 on p1.codigo = p2.codigo
 WHERE 
-(P2.ValorFechamento > P2.ValorAbertura OR P2.ValorMaximo > P1.ValorMaximo )
---NAO ESTA CONTIDO NO CANDLE ANTERIOR
-AND NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
---FECHOU ACIMA DA MÉDIA OU ACIMA DA MÁXIMA DO CANDLE ANTERIOR
-AND  (p2.ValorFechamento > p2.Valor OR P2.ValorFechamento > P1.ValorMaximo)
+(p2.ValorFechamento > p2.MM21 OR P2.ValorFechamento > P1.ValorMinimo)
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-AND (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR p2.Titulos_Total >= p1.Titulos_Total /* OR P2.ValorMaximo > P1.ValorMaximo*/
-)
+AND (P2.percentual_volume_quantidade >= 1 OR P2.Titulos_Total > P1.Titulos_Total)
+AND (P2.percentual_volume_negocios >=1 OR P2.Negocios_Total > P1.Negocios_Total)
+and p2.distancia <= 2.5
 ) as pc10
 
 full outer join
@@ -74,7 +69,7 @@ full outer join
 (select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade
 from 
 (
-	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total
+	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 21
 	where c.Data = @dataInicial
@@ -83,11 +78,12 @@ from
 inner join 
 (
 	select c.codigo, ValorAbertura, ValorFechamento, ValorMinimo, ValorMaximo
-	, M.Valor as MM21, c.Titulos_Total, 
+	, M.Valor as MM21, c.Titulos_Total, c.Negocios_Total,
 	c.Titulos_Total / MVOL.Valor as percentual_volume_quantidade,
 	C.Negocios_Total / MNS.Valor as percentual_volume_negocios,
 	dbo.MaxValue(VD.Valor, MVD.Valor) as Volatilidade,
-	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
+	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
+	ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / m.Valor - 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) as distancia
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 21
 	inner join Media_Semanal MVOL on c.Codigo = MVOL.Codigo and c.Data = MVOL.Data and MVOL.Tipo = 'VMA' AND MVOL.NumPeriodos = 21
@@ -111,17 +107,12 @@ inner join
 )  p2
 on p1.codigo = p2.codigo
 WHERE 
---(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo ) AND 
---NAO ESTA CONTIDO NO CANDLE ANTERIOR
---NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) AND
---FECHOU ACIMA DA MÉDIA OU ACIMA DA MÁXIMA DO CANDLE ANTERIOR
-  (p2.ValorFechamento > p2.MM21 OR P2.ValorFechamento > P1.ValorMaximo)
+(p2.ValorFechamento > p2.MM21 OR P2.ValorFechamento > P1.ValorMinimo)
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-AND (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR p2.Titulos_Total >= p1.Titulos_Total /* OR P2.ValorMaximo > P1.ValorMaximo*/
-)
+AND (P2.percentual_volume_quantidade >= 1 OR P2.Titulos_Total > P1.Titulos_Total)
+AND (P2.percentual_volume_negocios >=1 OR P2.Negocios_Total > P1.Negocios_Total)
+and p2.distancia <= 2.5
+
 ) as pc21
 on pc10.codigo = pc21.codigo
 order by  case when pc21.Codigo is null then 0 else 1 end, pc10.Codigo, pc21.Codigo

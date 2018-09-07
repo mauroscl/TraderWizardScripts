@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2018-2-7', @d2 as datetime = '2018-2-8', @d3 as datetime = '2018-2-9',
+declare @d1 as datetime = '2018-9-4', @d2 as datetime = '2018-9-5', @d3 as datetime = '2018-9-6',
 @percentualMinimoVolume as float = 0.8--, @percentualDesejadoVolume as float = 1.0
 
 select c3.codigo, C3.percentual_candle, C3.percentual_volume,
@@ -43,7 +43,6 @@ inner join
 	AND C.Valor_Total >= 1000000
 	AND C.Negocios_Total >= 100
 	AND C.ValorFechamento > M21.Valor
-	--AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2)) 
 	AND NOT M21.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
 	AND NOT M10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
 
@@ -52,7 +51,7 @@ inner join
 	AND c.Negocios_Total / MND.Valor >= @percentualMinimoVolume
 
 	--FECHOU ACIMA DA METADE DA AMPLITUDE
-	AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2))
+	--AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2))
 
 	--amplitude do candle maior que 10% da volatilidade
 	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
