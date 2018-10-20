@@ -1,9 +1,9 @@
-                                                        ----SEMANAL
+----SEMANAL
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, 
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2018-8-20', @dataFinal as datetime = '2018-8-27'
+DECLARE @dataInicial as datetime = '2018-10-1', @dataFinal as datetime = '2018-10-8'
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_candle, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
 ROUND((pc10.ValorMaximo  * (1 + pc10.Volatilidade * 1.25 / 100) / pc10.MM21 - 1) * 100, 3) / 10 / pc10.Volatilidade AS distancia,
@@ -111,6 +111,7 @@ WHERE
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
 AND (P2.percentual_volume_quantidade >= 1 OR P2.Titulos_Total > P1.Titulos_Total)
 AND (P2.percentual_volume_negocios >=1 OR P2.Negocios_Total > P1.Negocios_Total)
+--DISTANCIA PARA A MÉDIA DE 21 NO MÁXIMO 2.5 VEZES A VOLATILIDADE
 and p2.distancia <= 2.5
 
 ) as pc21

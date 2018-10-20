@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2018-9-4', @d2 as datetime = '2018-9-5', @d3 as datetime = '2018-9-6',
+declare @d1 as datetime = '2018-10-16', @d2 as datetime = '2018-10-17', @d3 as datetime = '2018-10-18',
 @percentualMinimoVolume as float = 0.8--, @percentualDesejadoVolume as float = 1.0
 
 select c3.codigo, C3.percentual_candle, C3.percentual_volume,

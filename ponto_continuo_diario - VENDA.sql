@@ -1,6 +1,6 @@
 ----DIARIO
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, 
-@dataAnterior as datetime = '2018-9-4', @dataAtual as datetime = '2018-9-5',
+@dataAnterior as datetime = '2018-10-11', @dataAtual as datetime = '2018-10-15',
 @ifr2Minimo as float = 2, @ifr14Minimo as float = 25
 	
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
@@ -107,6 +107,7 @@ inner join
 	and c.Negocios_Total / MND.Valor >= @percentualMinimoVolume
 
 	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+	AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) >= -1.5
 
 ) p2	
 on p1.codigo = p2.codigo

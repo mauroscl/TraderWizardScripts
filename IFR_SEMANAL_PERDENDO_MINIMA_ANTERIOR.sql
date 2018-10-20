@@ -1,5 +1,5 @@
 DECLARE 
-@data1 as date = '2018-8-13', @data2 as date = '2018-8-20', @data3 as date = '2018-8-27'
+@data1 as date = '2018-9-3', @data2 as date = '2018-9-10', @data3 as date = '2018-9-17'
 select p2.codigo
 from 
 (

@@ -5,11 +5,11 @@ DIA2.VALORFECHAMENTO / (1 + DIA2.OSCILACAO / 100) - DIA1.VALORFECHAMENTO As DIFE
 FROM
 (SELECT CODIGO, VALORFECHAMENTO
 FROM COTACAO 
-WHERE DATA = '2018-9-5') As DIA1 
+WHERE DATA = '2018-10-18') As DIA1 
 INNER JOIN
 (SELECT CODIGO, VALORFECHAMENTO, OSCILACAO
 FROM COTACAO 
-WHERE DATA = '2018-9-6') As DIA2
+WHERE DATA = '2018-10-19') As DIA2
 On DIA1.CODIGO = DIA2.CODIGO
 WHERE ABS(DIA2.OSCILACAO - Round((DIA2.VALORFECHAMENTO / DIA1.VALORFECHAMENTO -1) * 100, 2)) > 0.01
 And DIA1.CODIGO Not Like '%11B'
@@ -24,7 +24,7 @@ And DIA1.CODIGO Not Like '%17'
 --INSERT INTO Feriado
 --(Data, Descricao)
 --VALUES
---('2018-7-9', 'Revolução Constitucionalista')
+--('2018-9-7', 'Independência do Brasil')
 
 --INSERT INTO Split
 --(Codigo, Data, Tipo, QuantidadeAnterior, QuantidadePosterior)
@@ -38,7 +38,7 @@ And DIA1.CODIGO Not Like '%17'
 
 --select *
 --from split
-----where codigo = 'MULT3'
+--where codigo = 'MULT3'
 --ORDER BY DATA DESC
 
 --UPDATE SPLIT SET 

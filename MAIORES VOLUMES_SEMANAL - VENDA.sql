@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-8-20', @dataAtual as datetime = '2018-8-27',
+declare @dataAnterior as datetime = '2018-9-10', @dataAtual as datetime = '2018-9-17',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 SELECT P2.Codigo, P2.Titulos_Total, P1.percentual_volume_quantidade AS PercentualVolume1, p1.percentual_candle as PercentualCandle1, 
@@ -49,12 +49,15 @@ ON P1.Codigo = P2.Codigo
 WHERE NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
 
 AND (
-	--percentual de volume acima da média 
-	dbo.MaxValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualDesejadoVolume
-	--ou candle anterior com volume pelo menos na média e fechando acima da metade do candle (sinal comprador)
-	OR (dbo.MinValue(p1.percentual_volume_quantidade, p1.percentual_volume_negocios) >= @percentualIntermediarioVolume AND P1.percentual_candle <= 0.5  
-	AND dbo.MinValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualIntermediarioVolume)
-	--ou volume de negócios e de ações negociadas pelo menos 50% maior que o período anterior
+	(dbo.MinValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualIntermediarioVolume
+	AND	(
+			--percentual de volume acima da média 
+			dbo.MaxValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualDesejadoVolume
+			--ou candle anterior com volume pelo menos na média e fechando acima da metade do candle (sinal comprador)
+			OR (dbo.MinValue(p1.percentual_volume_quantidade, p1.percentual_volume_negocios) >= @percentualIntermediarioVolume AND P1.percentual_candle <= 0.5)
+		)
+	)
+	--ou volume de negócios e de ações negociadas pelo menos 30% maior que o período anterior
 	OR (p2.Negocios_Total / p1.Negocios_Total >= 1.3 AND p2.Titulos_Total / p1.Titulos_Total >= 1.3)
 )
 --DISTANCIA PARA MÉDIA DE 21 PERÍODOS NO MÁXIMO 2.5 vezes a volatilidade
