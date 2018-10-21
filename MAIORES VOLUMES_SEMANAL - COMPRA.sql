@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-10-1', @dataAtual as datetime = '2018-10-8',
+declare @dataAnterior as datetime = '2018-10-8', @dataAtual as datetime = '2018-10-15',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 SELECT P2.Codigo, P2.Titulos_Total, P1.percentual_volume_quantidade AS PercentualVolume1, p1.percentual_candle as PercentualCandle1, 
@@ -44,6 +44,9 @@ INNER JOIN
 
 	AND IFR14.Valor < 75
 	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+
+	AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) <= 1.5
+
 ) AS P2
 ON P1.Codigo = P2.Codigo
 WHERE NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
