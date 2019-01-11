@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-10-8', @dataAtual as datetime = '2018-10-15',
+declare @dataAnterior as datetime = '2018-12-26', @dataAtual as datetime = '2019-1-2',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 
@@ -75,8 +75,8 @@ GROUP BY IFR.CODIGO
 		where c.Data = @dataAtual
 		--fechou acima da metade do candle
 		and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo)
-		and c.Titulos_Total / mvol.Valor >= @percentualMinimoVolume
-		and c.Negocios_Total / MNS.Valor >= @percentualMinimoVolume
+		--and c.Titulos_Total / mvol.Valor >= @percentualMinimoVolume
+		--and c.Negocios_Total / MNS.Valor >= @percentualMinimoVolume
 		--amplitude do candle maior que 10% da volatilidade
 		AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
 		AND C.Negocios_Total >= 500
@@ -96,44 +96,37 @@ GROUP BY IFR.CODIGO
 	) as p2
 	on p1.Codigo = p2.Codigo
 	--N�O EST� CONTIDO NO CANDLE ANTERIOR
-	where --NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
-	--n�o tem m�dia OU acima da m�dia de 200 OU fechou acima da m�xima do candle de p1
-	--AND (ValorMM200 IS NULL OR p2.ValorFechamento > ValorMM200 OR  P2.ValorFechamento >  P1.ValorMaximo)
-	--SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
-	--AND 
-	
-	--(/*P2.percentual_volume  >= @percentualDesejadoVolume OR */ 
-	--p2.percentual_candle >= 0.75 OR p2.Titulos_Total >= p1.Titulos_Total OR P2.ValorMaximo > P1.ValorMaximo)
-
+	where 
 (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR p2.Titulos_Total >= p1.Titulos_Total
-	OR p2.Negocios_Total >= p1.Negocios_Total
-)
-AND 
-(
-	(p2.ValorMM21 > p1.ValorMM21) 
-	OR 
 	(
+		-- MAIS VOLUME QUE O ANTERIOR E VOLUME MINIMO. SOMENTE EM ALTA
+		dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
+		AND p2.ValorMM21 > p1.ValorMM21  
+		AND (p2.Titulos_Total >= p1.Titulos_Total
+		OR p2.Negocios_Total >= p1.Negocios_Total)
+	)
+	OR
+
 		(
+		-- 120% DA MÉDIA AND 75% CANDLE. QUALQUER TENDENCIA
 			p2.percentual_candle >= 0.75 
 			AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualVolumeRompimento 
 			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
 		) 
+		OR
+		(
+			-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+			p2.Titulos_Total / p1.Titulos_Total >= 1.3
+			AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
+		)
 		OR 
 		(
+			-- DOIS CANDLE COM VOLUME INTERMEDIARIO E CANDLE 50%. QUALQUER TENDENCIA
 			p1.percentual_candle >= 0.5 and p2.percentual_candle >= 0.5
 			AND dbo.MinValue(P1.percentual_volume_quantidade, P1.percentual_volume_negocios) >= @percentualIntermediarioVolume
 			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
 		)
-		OR
-		(
-			p2.Titulos_Total / p1.Titulos_Total >= 1.3
-			AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
-		)
 
-	)
 )
 
 

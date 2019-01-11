@@ -1,6 +1,6 @@
 ----DIARIO
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, 
-@dataAnterior as datetime = '2018-10-18', @dataAtual as datetime = '2018-10-19',
+@dataAnterior as datetime = '2019-1-9', @dataAtual as datetime = '2019-1-10',
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
@@ -8,9 +8,10 @@ pc10.distancia ,
 pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_volume_negocios, pc21.percentual_candle, pc21.ValorMinimo, pc21.ValorMaximo, ROUND(pc21.MM21,2) MM21, pc21.Volatilidade,	
 pc21.distancia
 from			
-(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
+(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, 
+p2.Volatilidade, p2.distancia
 from 
-(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total
+(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 from Cotacao c inner join Media_Diaria m on c.Codigo = m.Codigo and c.Data = m.Data
 where c.Data = @dataAnterior
 and m.Tipo = 'MMA'
@@ -64,10 +65,22 @@ WHERE
 and p2.distancia <= 2.5
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
 AND (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR p2.Titulos_Total >= p1.Titulos_Total
-	OR p2.Negocios_Total >= p1.Negocios_Total
+       (dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
+       AND (
+			   (p2.Titulos_Total >= p1.Titulos_Total
+			   AND p2.Negocios_Total >= p1.Negocios_Total)
+			   OR p1.percentual_candle < 0.5
+			   OR p2.ValorFechamento < p1.ValorMinimo
+			   OR dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
+		   )
+	   )
+
+	OR
+	(
+		-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+		p2.Titulos_Total / p1.Titulos_Total >= 1.3
+		AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
+	)
 )
 ) AS pc10
 full outer join
@@ -75,7 +88,7 @@ full outer join
 
 (select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
 from 
-(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total
+(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 from Cotacao c inner join Media_Diaria m on c.Codigo = m.Codigo and c.Data = m.Data
 where c.Data = @dataAnterior
 and m.Tipo = 'MMA'
@@ -121,11 +134,22 @@ and p2.distancia <= 2.5
 
 --SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
 AND (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR p2.Titulos_Total >= p1.Titulos_Total
-	OR p2.Negocios_Total >= p1.Negocios_Total
-	
+       (dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
+       AND (
+			   (p2.Titulos_Total >= p1.Titulos_Total
+			   AND p2.Negocios_Total >= p1.Negocios_Total)
+			   OR p1.percentual_candle < 0.5
+			   OR p2.ValorFechamento < p1.ValorMinimo
+			   OR dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
+		   )
+	   )
+
+	OR
+	(
+		-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+		p2.Titulos_Total / p1.Titulos_Total >= 1.3
+		AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
+	)
 )
 
 --AND (P2.percentual_volume_quantidade >= 1 OR P2.Titulos_Total > P1.Titulos_Total)

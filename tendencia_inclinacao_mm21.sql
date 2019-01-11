@@ -2,13 +2,13 @@ SELECT SUM(CASE WHEN P2.Valor > P1.VALOR THEN 1 ELSE 0 END) AS SUBINDO, SUM(CASE
 FROM 
 (select Codigo, valor
 from Media_Diaria
-where data = '2018-10-15'
+where data = '2019-1-3'
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P1
 INNER JOIN 
 (select Codigo, valor
 from Media_Diaria
-where data = '2018-10-16'
+where data = '2019-1-4'
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P2
 ON P1.Codigo = P2.Codigo
@@ -18,13 +18,13 @@ SELECT SUM(CASE WHEN P2.Valor > P1.VALOR THEN 1 ELSE 0 END) AS SUBINDO, SUM(CASE
 FROM 
 (select Codigo, valor
 from Media_Semanal
-where data = '2018-9-10'
+where data = '2018-12-17'
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P1
 INNER JOIN 
 (select Codigo, valor
 from Media_Semanal
-where data = '2018-9-17'
+where data = '2018-12-26'
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P2
 ON P1.Codigo = P2.Codigo
@@ -34,13 +34,13 @@ SELECT P1.Codigo
 FROM 
 (select Codigo, valor
 from Media_Diaria
-where data = '2018-10-5'
+where data = '2018-12-18'
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P1
 INNER JOIN 
 (select Codigo, valor
 from Media_Diaria
-where data = '2018-10-8'
+where data = '2018-12-19'
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P2
 ON P1.Codigo = P2.Codigo

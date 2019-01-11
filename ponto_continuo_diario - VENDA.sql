@@ -1,16 +1,16 @@
 ----DIARIO
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, 
-@dataAnterior as datetime = '2018-10-11', @dataAtual as datetime = '2018-10-15',
+@dataAnterior as datetime = '2018-11-12', @dataAtual as datetime = '2018-11-13',
 @ifr2Minimo as float = 2, @ifr14Minimo as float = 25
 	
-select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
+select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle2, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
 pc10.distancia ,
-pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_volume_negocios, pc21.percentual_candle, pc21.ValorMinimo, pc21.ValorMaximo, ROUND(pc21.MM21,2) MM21, pc21.Volatilidade,	
+pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_volume_negocios, pc21.percentual_candle2, pc21.ValorMinimo, pc21.ValorMaximo, ROUND(pc21.MM21,2) MM21, pc21.Volatilidade,	
 pc21.distancia
 from			
-(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
+(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
 from 
-(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total
+(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 from Cotacao c inner join Media_Diaria m on c.Codigo = m.Codigo and c.Data = m.Data
 where c.Data = @dataAnterior
 and m.Tipo = 'MMA'
@@ -52,28 +52,36 @@ inner join
 ) p2
 on p1.codigo = p2.codigo
 WHERE 
---CANDLE COMPRADOR OU QUE SUPEROU A MÁXIMA
---(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo ) AND  
---NÃO PERMITIR CANDLE CANTIDO NO ANTERIOR
---AND NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
---FECHOU ABAIXODA MÉDIA
-(p2.ValorFechamento < p2.MM10)
+(p2.ValorFechamento < p2.MM10 OR P2.ValorFechamento < P1.ValorMinimo)
+
 
 and p2.distancia <= 2.5
---SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
+--volume maior que o anterior, ou dois ultimos candles positivos ou fechando acima da máxima do candle anterior
 AND (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR (p2.Titulos_Total >= p1.Titulos_Total
-	OR p2.Negocios_Total >= p1.Negocios_Total)
+       (dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
+       AND (
+			   (p2.Titulos_Total >= p1.Titulos_Total
+			   AND p2.Negocios_Total >= p1.Negocios_Total)
+			   OR p1.percentual_candle < 0.5
+			   OR p2.ValorFechamento < p1.ValorMinimo
+			   OR dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
+		   )
+	   )
+
+	OR
+	(
+		-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+		p2.Titulos_Total / p1.Titulos_Total >= 1.3
+		AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
+	)
 )
 ) AS pc10
 full outer join
 --PONTO CONTINUO MMA 21
 
-(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
+(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
 from 
-(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total
+(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 from Cotacao c inner join Media_Diaria m on c.Codigo = m.Codigo and c.Data = m.Data
 where c.Data = @dataAnterior
 and m.Tipo = 'MMA'
@@ -112,21 +120,29 @@ inner join
 ) p2	
 on p1.codigo = p2.codigo
 WHERE 
---(P2.ValorFechamento > P2.ValorAbertura  OR P2.ValorMaximo > P1.ValorMaximo ) AND  
---NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo))  AND
 
---FECHOU ABAIXO DA MÉDIA
- (p2.ValorFechamento < p2.Valor)
+(p2.ValorFechamento < p2.MM21 OR P2.ValorFechamento < P1.ValorMinimo)
 
 and p2.distancia <= 2.5
 
---SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
+--volume maior que o anterior, ou dois ultimos candles positivos ou fechando acima da máxima do candle anterior
 AND (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR (p2.Titulos_Total >= p1.Titulos_Total
-	AND p2.Negocios_Total >= p1.Negocios_Total)
-	
+       (dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
+       AND (
+			   (p2.Titulos_Total >= p1.Titulos_Total
+			   AND p2.Negocios_Total >= p1.Negocios_Total)
+			   OR p1.percentual_candle < 0.5
+			   OR p2.ValorFechamento < p1.ValorMinimo
+			   OR dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
+		   )
+	   )
+
+	OR
+	(
+		-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+		p2.Titulos_Total / p1.Titulos_Total >= 1.3
+		AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
+	)
 )
 
 ) as pc21 on pc10.codigo = pc21.codigo

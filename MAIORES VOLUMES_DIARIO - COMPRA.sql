@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-10-18', @dataAtual as datetime = '2018-10-19',
+declare @dataAnterior as datetime = '2019-1-8', @dataAtual as datetime = '2019-1-9',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 
@@ -47,7 +47,7 @@ INNER JOIN
 	AND IFR14.Valor < 80
 	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
 
-	AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) <= 1.5
+	--AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) <= 1.5
 
 ) AS P2
 ON P1.Codigo = P2.Codigo
@@ -58,7 +58,7 @@ AND (
 			--percentual de volume acima da média 
 			dbo.MaxValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualDesejadoVolume
 			--ou candle anterior com volume pelo menos na média e fechando acima da metade do candle (sinal comprador)
-			OR (dbo.MinValue(p1.percentual_volume_quantidade, p1.percentual_volume_negocios) >= @percentualIntermediarioVolume AND P1.percentual_candle >= 0.5)
+			OR (dbo.MinValue(p1.percentual_volume_quantidade, p1.percentual_volume_negocios) >= @percentualIntermediarioVolume AND P1.percentual_candle <= 0.5)
 		)
 	)
 	--ou volume de negócios e de ações negociadas pelo menos 30% maior que o período anterior
@@ -68,4 +68,4 @@ AND (
 --DISTANCIA PARA MÉDIA DE 21 PERÍODOS NO MÁXIMO 2.5 vezes a volatilidade
 AND ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade <= 2.5
 
-ORDER BY p2.Volatilidade desc, P2.percentual_volume_quantidade DESC
+ORDER BY P2.percentual_volume_quantidade DESC, p2.Volatilidade desc

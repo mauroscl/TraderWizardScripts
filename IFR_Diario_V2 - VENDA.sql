@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-10-10', @dataAtual as datetime = '2018-10-11',
+declare @dataAnterior as datetime = '2018-11-14', @dataAtual as datetime = '2018-11-16',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 --@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
@@ -99,35 +99,33 @@ FROM
 	--não está contido no candle anterior
 	where 
 
---SEGUNDO CANDLE TEM MAIOR VOLUME QUE O CANDLE ANTERIOR OU ESTÁ PELO MENOS NA MÉDIA DO VOLUME
 (
-	(dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-	AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume)  
-	OR p2.Titulos_Total >= p1.Titulos_Total
-	OR p2.Negocios_Total >= p1.Negocios_Total
-)
-
-AND (
-	(p2.ValorMM21 < p1.ValorMM21) 
-	OR 
 	(
+		-- MAIS VOLUME QUE O ANTERIOR E VOLUME MINIMO. SOMENTE EM ALTA
+		dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
+		AND p2.ValorMM21 < p1.ValorMM21  
+	)
+	OR
+
 		(
+		-- 120% DA MÉDIA AND 75% CANDLE. QUALQUER TENDENCIA
 			p2.percentual_candle <= 0.25 
 			AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualVolumeRompimento 
 			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
 		) 
+		OR
+		(
+			-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+			p2.Titulos_Total / p1.Titulos_Total >= 1.3
+			AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
+		)
 		OR 
 		(
+			-- DOIS CANDLE COM VOLUME INTERMEDIARIO E CANDLE 50%. QUALQUER TENDENCIA
 			p1.percentual_candle <= 0.5 and p2.percentual_candle <= 0.5
 			AND dbo.MinValue(P1.percentual_volume_quantidade, P1.percentual_volume_negocios) >= @percentualIntermediarioVolume
 			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
 		)
-		OR
-		(
-			p2.Titulos_Total / p1.Titulos_Total >= 1.3
-			AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
-		)
-	)
 )
 
 	
