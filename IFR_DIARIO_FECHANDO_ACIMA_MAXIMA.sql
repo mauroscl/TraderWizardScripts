@@ -44,5 +44,6 @@ AND
 	--nao está tocando na média e a distancia do valor maximo para  a média é maior que a amplitude do candle
 	OR (NOT P3.MM21 BETWEEN P3.ValorMinimo AND P3.ValorMaximo AND (p3.MM21 - P3.ValorMaximo > P3.ValorMaximo - P3.ValorMinimo))
 	-- mais da metade do candle está acima da média
-	OR (P3.ValorMaximo - P3.MM21 > P3.MM21 - P3.ValorMinimo ))
+	OR (P3.ValorMaximo - P3.MM21 > P3.MM21 - P3.ValorMinimo )
+)
 
