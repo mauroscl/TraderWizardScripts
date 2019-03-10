@@ -25,6 +25,6 @@ AND IFR.Valor <= 65
 AND (C.ValorFechamento > M.Valor OR (M.Valor - C.ValorMaximo > C.ValorMaximo - C.ValorMinimo))
 ) as p3
 on p2.codigo = p3.codigo
-where P2.ValorMaximo < p1.ValorMaximo
+where P2.ValorFechamento < p1.ValorMaximo
 --AND p3.ValorFechamento < p2.ValorMaximo
 AND P3.ValorMaximo > P2.ValorMaximo

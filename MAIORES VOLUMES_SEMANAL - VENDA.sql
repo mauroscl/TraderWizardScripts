@@ -7,11 +7,12 @@ ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100
 P2.ValorMinimo, P2.ValorMaximo, P2.MM21, P2.volatilidade
 FROM
 (
-	SELECT C.Codigo, C.Titulos_Total, C.Negocios_Total, C.ValorMinimo, C.ValorMaximo, 
+	SELECT C.Codigo, C.Titulos_Total, C.Negocios_Total, C.ValorMinimo, C.ValorMaximo, M21.Valor as MM21,
 	(C.Titulos_Total  / M.Valor) as percentual_volume_quantidade,
 	C.Negocios_Total / MNS.Valor as percentual_volume_negocios,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 	FROM Cotacao_Semanal C
+	INNER JOIN Media_Semanal M21 ON C.Codigo = M21.Codigo AND  C.Data = M21.Data AND M21.Tipo = 'MMA' AND M21.NumPeriodos = 21
 	INNER JOIN Media_Semanal M ON C.Codigo = M.Codigo AND  C.Data = M.Data AND M.Tipo = 'VMA' AND M.NumPeriodos = 21
 	INNER JOIN MediaNegociosSemanal MNS ON C.Codigo = MNS.Codigo AND C.Data = MNS.Data
 	WHERE C.Data = @dataAnterior
@@ -47,7 +48,7 @@ INNER JOIN
 ) AS P2
 ON P1.Codigo = P2.Codigo
 WHERE NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
-
+AND P2.MM21 < P1.MM21
 AND (
 	(dbo.MinValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualIntermediarioVolume
 	AND	(
