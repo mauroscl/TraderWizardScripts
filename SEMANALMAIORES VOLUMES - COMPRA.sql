@@ -1,13 +1,14 @@
-declare @dataAnterior as datetime = '2019-2-25', @dataAtual as datetime = '2019-3-6',
+declare @dataAnterior as datetime = '2020-1-6', @dataAtual as datetime = '2020-1-13',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 SELECT P2.Codigo, P2.Titulos_Total, P1.percentual_volume_quantidade AS PercentualVolume1, p1.percentual_candle as PercentualCandle1, 
 P2.percentual_volume_quantidade, p2.percentual_candle as PercentualCandle2, p2.percentual_volume_negocios,
-ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia,
+ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_mm21,
+ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P1.ValorFechamento - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_fechamento_anterior,
 P2.ValorMinimo, P2.ValorMaximo, P2.MM21, P2.volatilidade
 FROM
 (
-	SELECT C.Codigo, C.Titulos_Total, C.Negocios_Total, C.ValorMinimo, C.ValorMaximo, M21.Valor as MM21,
+	SELECT C.Codigo, C.Titulos_Total, C.Negocios_Total, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, M21.Valor as MM21,
 	(C.Titulos_Total  / M.Valor) as percentual_volume_quantidade,
 	C.Negocios_Total / MNS.Valor as percentual_volume_negocios,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle

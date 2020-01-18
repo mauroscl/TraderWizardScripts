@@ -3,18 +3,17 @@ DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume a
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2019-2-25', @dataFinal as datetime = '2019-6-3'
+DECLARE @dataInicial as datetime = '2020-1-6', @dataFinal as datetime = '2020-1-13'
 
-select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_candle2, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
-ROUND((pc10.ValorMaximo  * (1 + pc10.Volatilidade * 1.25 / 100) / pc10.MM21 - 1) * 100, 3) / 10 / pc10.Volatilidade AS distancia,
-
-pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_candle2, pc21.ValorMinimo, pc21.ValorMaximo, ROUND(pc21.MM21,2) MM21, pc21.Volatilidade,
-ROUND((pc21.ValorMaximo  * (1 + pc21.Volatilidade * 1.25 / 100) / pc21.MM21 - 1) * 100, 3) / 10 / pc21.Volatilidade AS distancia
+select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_candle2,pc10.distancia_mm21, pc10.distancia_fechamento_anterior,
+pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_candle2,pc21.distancia_mm21, pc21.distancia_fechamento_anterior
 from			
-(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade
+(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia_mm21,
+ROUND((p2.ValorMaximo  * (1 + p2.Volatilidade * 1.5 / 100) / p1.ValorFechamento- 1) * 100, 3) / 10 / p2.Volatilidade as distancia_fechamento_anterior
+
 from 
 (
-	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
+	select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 	from Cotacao_Semanal c inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data	
 	where c.Data = @dataInicial
 	and m.Tipo = 'MMA'
@@ -28,7 +27,7 @@ inner join
 	C.Negocios_Total / MNS.Valor as percentual_volume_negocios,
 	M21.Valor AS MM21, dbo.MaxValue(VD.Valor, MVD.Valor) AS Volatilidade,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
-	ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / m21.Valor - 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) as distancia
+	ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / m21.Valor - 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) as distancia_mm21
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m10 on c.Codigo = m10.Codigo and c.Data = m10.Data and m10.Tipo = 'MMA' AND M10.NumPeriodos = 10
 	inner join Media_Semanal m21 on c.Codigo = m21.Codigo and c.Data = m21.Data and m21.Tipo = 'MMA' AND M21.NumPeriodos = 21
@@ -57,6 +56,8 @@ inner join
 on p1.codigo = p2.codigo
 WHERE 
 (p2.ValorFechamento > p2.MM21 OR P2.ValorFechamento > P1.ValorMinimo)
+--evitar segundo candle com sombra acima do candle anterior
+AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
 
 --volume maior que o anterior, ou dois ultimos candles positivos ou fechando acima da máxima do candle anterior
 AND (
@@ -77,16 +78,18 @@ AND (
 		AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
 	)
 )
-and p2.distancia <= 2.5
+and p2.distancia_mm21 <= 2.5
 ) as pc10
 
 full outer join
 --PONTO CONTINIUO (21)
 
-(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade
+(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia_mm21,
+ROUND((p2.ValorMaximo  * (1 + p2.Volatilidade * 1.5 / 100) / p1.ValorFechamento- 1) * 100, 3) / 10 / p2.Volatilidade as distancia_fechamento_anterior
+
 from 
 (
-	select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
+	select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 21
 	where c.Data = @dataInicial
@@ -100,7 +103,7 @@ inner join
 	C.Negocios_Total / MNS.Valor as percentual_volume_negocios,
 	dbo.MaxValue(VD.Valor, MVD.Valor) as Volatilidade,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle2,
-	ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / m.Valor - 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) as distancia
+	ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / m.Valor - 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) as distancia_mm21
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 21
 	inner join Media_Semanal MVOL on c.Codigo = MVOL.Codigo and c.Data = MVOL.Data and MVOL.Tipo = 'VMA' AND MVOL.NumPeriodos = 21
@@ -126,7 +129,8 @@ inner join
 on p1.codigo = p2.codigo
 WHERE 
 (p2.ValorFechamento > p2.MM21 OR P2.ValorFechamento > P1.ValorMinimo)
-
+--evitar segundo candle com sombra acima do candle anterior
+AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
 --volume maior que o anterior, ou dois ultimos candles positivos ou fechando acima da máxima do candle anterior
 AND (
        (dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
@@ -148,7 +152,7 @@ AND (
 )
 
 --DISTANCIA PARA A MÉDIA DE 21 NO MÁXIMO 2.5 VEZES A VOLATILIDADE
-and p2.distancia <= 2.5
+and p2.distancia_mm21 <= 2.5
 
 ) as pc21
 on pc10.codigo = pc21.codigo

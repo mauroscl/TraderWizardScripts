@@ -1,14 +1,15 @@
-declare @dataAnterior as datetime = '2019-3-7', @dataAtual as datetime = '2019-3-8',
+declare @dataAnterior as datetime = '2020-1-16', @dataAtual as datetime = '2020-1-17',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 
 SELECT P2.Codigo, P2.Titulos_Total, P1.percentual_volume_quantidade AS PercentualVolumeQuantidade1, p1.percentual_candle as PercentualCandle1, 
 P2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle as PercentualCandle2, 
-ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia,
+ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_mm_21,
+ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P1.ValorFechamento - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_fechamento_anterior,
 P2.ValorMinimo, P2.ValorMaximo, P2.MM21, P2.volatilidade
 FROM
 (
-	SELECT C.Codigo, C.Titulos_Total, c.Negocios_Total, C.ValorMinimo, C.ValorMaximo, M21.Valor as MM21,
+	SELECT C.Codigo, C.Titulos_Total, c.Negocios_Total, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, M21.Valor as MM21,
 	(C.Titulos_Total  / M.Valor) as percentual_volume_quantidade,
 	C.Negocios_Total / MND.Valor as percentual_volume_negocios,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
@@ -54,7 +55,7 @@ INNER JOIN
 ) AS P2
 ON P1.Codigo = P2.Codigo
 WHERE NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
-AND P2.MM21 > P1.MM21
+--AND P2.MM21 > P1.MM21
 AND (
 	(dbo.MinValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualIntermediarioVolume
 	AND	(
@@ -69,6 +70,6 @@ AND (
 )
 
 --DISTANCIA PARA MÉDIA DE 21 PERÍODOS NO MÁXIMO 2.5 vezes a volatilidade
-AND ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade <= 2.5
+AND ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade <= 2.5
 
 ORDER BY P2.percentual_volume_quantidade DESC, p2.Volatilidade desc
