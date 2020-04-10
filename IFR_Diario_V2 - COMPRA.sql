@@ -1,8 +1,6 @@
-declare @dataAnterior as datetime = '2020-1-16', @dataAtual as datetime = '2020-1-17',
-@percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
+declare @dataAnterior as datetime = '2020-4-7', @dataAtual as datetime = '2020-4-8',
+@percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
---@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
---@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
 
 select sobrevendido.Codigo, Data, atual.percentual_volume_quantidade, atual.percentual_volume_negocios, atual.percentual_candle_anterior, atual.percentual_candle_atual,
 atual.direcao_m21,atual.Oscilacao ,atual.VolatilidadeMaxima, atual.ValorMinimo, atual.ValorMaximo, entrada, saida, entrada * 2 - saida as alvo, atual.MM21
@@ -50,11 +48,14 @@ FROM
 		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
 		ROUND(mm21.Valor, 2) as ValorMM21,
 		C.Titulos_Total / mvol.Valor as percentual_volume_quantidade,
-		C.Negocios_Total / MND.Valor as percentual_volume_negocios
+		C.Negocios_Total / MND.Valor as percentual_volume_negocios,
+		dbo.MinValue(VD.Valor, MVD.Valor) AS VolatilidadeMinima
 		from cotacao c
 		inner join Media_Diaria mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
 		inner join Media_Diaria mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
 		inner join MediaNegociosDiaria MND on c.Codigo = MND.Codigo and c.Data = MND.Data
+		INNER JOIN VolatilidadeDiaria VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
+		LEFT JOIN MediaVolatilidadeDiaria MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
 
 		where c.Data = @dataAnterior) as p1
 		inner join
@@ -94,36 +95,47 @@ FROM
 	where 
 	--EVITAR PAPÉIS QUE SUPERARAM A MÁXIMA E DEPOIS FECHARAM ABAIXO DA MÁXIMA
 	(p2.ValorFechamento > p1.ValorMaximo OR P2.ValorMaximo <= P1.ValorMaximo)
+	
+	--quando amplitude do movimento anterior (p1) for maior que a volatilidade, se o movimento for negativo, o candle de p2 deve fechar acima da máxima de p1 (removido para tentar pegar fechou fora fechou dentro)
+	--AND
+	--(
+	--	P2.ValorFechamento	>  P1.ValorMaximo --fechou acima da máxima anterior
+	--	OR P2.ValorMM21 > P1.ValorMM21 --MM21 está subindo
+	--	OR (P1.ValorMaximo - P1.ValorFechamento) < (P1.ValorFechamento - P1.ValorMinimo) --candle anterior fechou acima da metadade da amplitude
+	--	OR (P1.ValorMaximo / P1.ValorMinimo -1 ) < P1.VolatilidadeMinima / 10 --candle anterior tem amplitude menor que a volatilidade mínima
+	--)
+
 	--MEDIA DE 21 ESTÁ SUBINDO OU CANDLE NAO ESTÁ CORTANDO A MÉDIA OU MAIS DA METADE DO CORPO DO CANDLE ESTÁ ACIMA DA MÉDIA DE 21
 	AND (P2.ValorMM21 > P1.ValorMM21 OR NOT P2.ValorMM21 BETWEEN P2.ValorMinimo AND P2.ValorMaximo OR (P2.ValorMaximo - P2.ValorMM21 > P2.ValorMM21 - P2.ValorMinimo ))
-	AND (
+
+	AND 
+	(
 		(
 			-- MAIS VOLUME QUE O ANTERIOR E VOLUME MINIMO. SOMENTE EM ALTA
 			dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
 			AND p2.ValorMM21 > p1.ValorMM21  
 		)
 		OR
-
-			(
-			-- 120% DA MÉDIA AND 75% CANDLE. QUALQUER TENDENCIA
-				p2.percentual_candle >= 0.75 
-				AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualVolumeRompimento 
-				AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
-			) 
-			OR
-			(
-				-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
-				p2.percentual_candle >= 0.75 
-				AND p2.Titulos_Total / p1.Titulos_Total >= 1.3
-				AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
-			)
-			OR 
-			(
-				-- DOIS CANDLE COM VOLUME INTERMEDIARIO E CANDLE 50%. QUALQUER TENDENCIA
-				p1.percentual_candle >= 0.5 and p2.percentual_candle >= 0.5
-				AND dbo.MinValue(P1.percentual_volume_quantidade, P1.percentual_volume_negocios) >= @percentualIntermediarioVolume
-				AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
-			)
+		(
+		-- 120% DA MÉDIA AND 75% CANDLE. QUALQUER TENDENCIA
+			p2.percentual_candle >= 0.75 
+			AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualVolumeRompimento 
+			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
+		) 
+		OR
+		(
+			-- 130% DO VOLUME DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+			p2.percentual_candle >= 0.75 
+			AND p2.Titulos_Total / p1.Titulos_Total >= 1.2
+			AND p2.Negocios_Total / p1.Negocios_Total >= 1.2
+		)
+		OR 
+		(
+			-- DOIS CANDLE COM VOLUME INTERMEDIARIO E CANDLE 50%. QUALQUER TENDENCIA
+			p1.percentual_candle >= 0.5 and p2.percentual_candle >= 0.5
+			AND dbo.MinValue(P1.percentual_volume_quantidade, P1.percentual_volume_negocios) >= @percentualDesejadoVolume
+			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
+		)
 	)
 ) as atual on sobrevendido.Codigo = atual.Codigo
 

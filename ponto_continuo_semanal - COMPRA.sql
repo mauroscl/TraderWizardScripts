@@ -3,7 +3,7 @@ DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume a
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2020-1-6', @dataFinal as datetime = '2020-1-13'
+DECLARE @dataInicial as datetime = '2020-3-16', @dataFinal as datetime = '2020-3-23'
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_candle2,pc10.distancia_mm21, pc10.distancia_fechamento_anterior,
 pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_candle2,pc21.distancia_mm21, pc21.distancia_fechamento_anterior
@@ -13,8 +13,12 @@ ROUND((p2.ValorMaximo  * (1 + p2.Volatilidade * 1.5 / 100) / p1.ValorFechamento-
 
 from 
 (
-	select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
+	select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, 
+	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
+	dbo.MinValue(VS.Valor, MVS.Valor) AS VolatilidadeMinima
 	from Cotacao_Semanal c inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data	
+	INNER JOIN VolatilidadeSemanal VS ON C.Codigo = VS.Codigo AND C.DATA = VS.Data
+	LEFT JOIN MediaVolatilidadeSemanal MVS ON C.Codigo = MVS.Codigo AND C.DATA = MVS.Data
 	where c.Data = @dataInicial
 	and m.Tipo = 'MMA'
 	AND M.NumPeriodos = 10
@@ -59,6 +63,14 @@ WHERE
 --evitar segundo candle com sombra acima do candle anterior
 AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
 
+--quando amplitude do movimento anterior (p1) for maior que a volatilidade, se o movimento for negativo, o candle de p2 deve fechar acima da máxima de p1
+AND
+(
+	P2.ValorFechamento	>  P1.ValorMaximo --fechou acima da máxima anterior
+	OR (P1.ValorMaximo - P1.ValorFechamento) < (P1.ValorFechamento - P1.ValorMinimo) --fechou acima da metade da metadade da amplitude
+	OR (P1.ValorMaximo / P1.ValorMinimo -1 ) < P1.VolatilidadeMinima / 10 --amplitude menor que a volatilidade mínima
+)
+
 --volume maior que o anterior, ou dois ultimos candles positivos ou fechando acima da máxima do candle anterior
 AND (
        (dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume
@@ -89,9 +101,13 @@ ROUND((p2.ValorMaximo  * (1 + p2.Volatilidade * 1.5 / 100) / p1.ValorFechamento-
 
 from 
 (
-	select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
+	select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, 
+	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
+	dbo.MinValue(VS.Valor, MVS.Valor) AS VolatilidadeMinima
 	from Cotacao_Semanal c 
 	inner join Media_Semanal m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 21
+	INNER JOIN VolatilidadeSemanal VS ON C.Codigo = VS.Codigo AND C.DATA = VS.Data
+	LEFT JOIN MediaVolatilidadeSemanal MVS ON C.Codigo = MVS.Codigo AND C.DATA = MVS.Data
 	where c.Data = @dataInicial
 	AND C.ValorMaximo >= M.Valor
 ) p1
@@ -131,6 +147,15 @@ WHERE
 (p2.ValorFechamento > p2.MM21 OR P2.ValorFechamento > P1.ValorMinimo)
 --evitar segundo candle com sombra acima do candle anterior
 AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
+
+--quando amplitude do movimento anterior (p1) for maior que a volatilidade, se o movimento for negativo, o candle de p2 deve fechar acima da máxima de p1
+AND
+(
+	P2.ValorFechamento	>  P1.ValorMaximo --fechou acima da máxima anterior
+	OR (P1.ValorMaximo - P1.ValorFechamento) < (P1.ValorFechamento - P1.ValorMinimo) --fechou acima da metade da metadade da amplitude
+	OR (P1.ValorMaximo / P1.ValorMinimo -1 ) < P1.VolatilidadeMinima / 10 --amplitude menor que a volatilidade mínima
+)
+
 --volume maior que o anterior, ou dois ultimos candles positivos ou fechando acima da máxima do candle anterior
 AND (
        (dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualMinimoVolume

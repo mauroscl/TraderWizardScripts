@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2018-12-7', @dataAtual as datetime = '2018-12-10',
+declare @dataAnterior as datetime = '2020-4-7', @dataAtual as datetime = '2020-4-8',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 
@@ -41,13 +41,9 @@ INNER JOIN
 	AND ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) <= 0.25
 	AND (C.ValorMinimo + ((C.ValorMaximo - C.ValorMinimo) / 2)) < M21.Valor
 
-	/* comentado em 20/07/2018 para fazer o teste com ações que tem um volume bem acima do dia anterior, mas não acima da média
-	AND C.Titulos_Total / M.Valor >= 1
-	AND C.Negocios_Total / MND.Valor >= 1*/
-
 	AND IFR14.Valor > 25
 	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
-	AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) >= -1.5
+	--AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) >= -1.5
 
 
 ) AS P2

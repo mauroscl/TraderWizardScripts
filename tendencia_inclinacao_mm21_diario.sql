@@ -1,4 +1,4 @@
-DECLARE @data1 as datetime = '2020-1-10', @data2 as datetime = '2020-1-13'
+DECLARE @data1 as datetime = '2020-4-6', @data2 as datetime = '2020-4-7'
 
 SELECT SUM(CASE WHEN P2.Valor > P1.VALOR THEN 1 ELSE 0 END) AS SUBINDO, SUM(CASE WHEN P2.Valor < P1.VALOR THEN 1 ELSE 0 END) AS DESCENDO
 FROM 

@@ -1,5 +1,5 @@
-declare @dataAnterior as datetime = '2018-11-14', @dataAtual as datetime = '2018-11-16',
-@percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
+declare @dataAnterior as datetime = '2020-4-7', @dataAtual as datetime = '2020-4-8',
+@percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 --@numPeriodos as int = 2, @valorSobrevendido as int = 10, @valorSobreComprado as int = 90
 --@numPeriodos as int = 14, @valorSobrevendido as int = 35, @valorSobreComprado as int = 65
@@ -32,7 +32,7 @@ FROM
 		FROM Cotacao C
 		WHERE IFR.Codigo = C.Codigo
 		and C.[Data] = @dataAtual
-		AND C.Sequencial - IFR.Sequencial <= 6
+		AND C.Sequencial - IFR.Sequencial <= 5
 	)
 	GROUP BY IFR.CODIGO
 ) as sobrevendido INNER JOIN
@@ -116,15 +116,15 @@ FROM
 		OR
 		(
 			-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
-			p2.Titulos_Total / p1.Titulos_Total >= 1.3
-			AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
+			p2.Titulos_Total / p1.Titulos_Total >= 1.2
+			AND p2.Negocios_Total / p1.Negocios_Total >= 1.2
 		)
 		OR 
 		(
 			-- DOIS CANDLE COM VOLUME INTERMEDIARIO E CANDLE 50%. QUALQUER TENDENCIA
 			p1.percentual_candle <= 0.5 and p2.percentual_candle <= 0.5
-			AND dbo.MinValue(P1.percentual_volume_quantidade, P1.percentual_volume_negocios) >= @percentualIntermediarioVolume
-			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualIntermediarioVolume
+			AND dbo.MinValue(P1.percentual_volume_quantidade, P1.percentual_volume_negocios) >= @percentualDesejadoVolume
+			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
 		)
 )
 
