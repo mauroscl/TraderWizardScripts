@@ -1,4 +1,4 @@
-declare @d1 as datetime = '2019-10-4', @d2 as datetime = '2019-10-7', @d3 as datetime = '2019-10-8'
+declare @d1 as datetime = '2020-4-13', @d2 as datetime = '2020-4-14', @d3 as datetime = '2020-4-15'
 --papéis que viraram a média PARA BAIXO
 SELECT P1.Codigo
 FROM 

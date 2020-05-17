@@ -1,9 +1,9 @@
-                                                        ----SEMANAL
+----SEMANAL
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 0.9, @percentualDesejadoVolume as float = 1.0, 
 @ifr2Minimo as float = 2, @ifr14Minimo as float = 25
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2018-9-10', @dataFinal as datetime = '2018-9-17'
+DECLARE @dataInicial as datetime = '2020-5-4', @dataFinal as datetime = '2020-5-11'
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle2, pc10.ValorMinimo, pc10.ValorMaximo, 
 ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade, pc10.distancia,
@@ -51,7 +51,7 @@ inner join
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
 	and c.Negocios_Total / MNS.Valor >= @percentualMinimoVolume
 
-	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+	AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
 
 )  p2
 on p1.codigo = p2.codigo
@@ -121,7 +121,7 @@ inner join
 	--VOLUME MAIOR OU IGUAL A 80% DA MÉDIA DO VOLUME
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
 	and c.Negocios_Total / MNS.Valor >= @percentualMinimoVolume
-	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+	AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
 
 )  p2
 on p1.codigo = p2.codigo
@@ -153,6 +153,7 @@ and p2.distancia <= 2.5
 
 ) as pc21
 on pc10.codigo = pc21.codigo
+
 order by  case when pc21.Codigo is null then 0 else 1 end, pc10.Codigo, pc21.Codigo
 
 

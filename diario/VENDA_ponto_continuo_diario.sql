@@ -1,16 +1,19 @@
 ----DIARIO
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
-@dataAnterior as datetime = '2020-4-7', @dataAtual as datetime = '2020-4-8',
+@dataAnterior as datetime = '2020-5-14', @dataAtual as datetime = '2020-5-15',
 @ifr2Minimo as float = 2, @ifr14Minimo as float = 25
 	
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle2, pc10.ValorMinimo, pc10.ValorMaximo, ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade,
-pc10.distancia ,
+pc10.distancia AS distancia_mm21, pc10.INCLINACAO,
 pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_volume_negocios, pc21.percentual_candle2, pc21.ValorMinimo, pc21.ValorMaximo, ROUND(pc21.MM21,2) MM21, pc21.Volatilidade,	
-pc21.distancia
+pc21.distancia, pc21.INCLINACAO
 from			
-(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
+(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia,
+ROUND((p2.ValorMaximo  * (1 + p2.Volatilidade * 1.5 / 100) / p1.ValorFechamento- 1) * 100, 3) / 10 / p2.Volatilidade as distancia_fechamento_anterior,
+CASE WHEN ROUND(P2.MM21, 2) > ROUND(P1.MM21,2) THEN 'SUBINDO' WHEN ROUND(P2.MM21,2) = ROUND(P1.MM21, 2) THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO
+
 from 
-(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle, MM21.Valor AS MM21, 
+(select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle, MM21.Valor AS MM21, 
 c.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, C.Negocios_Total / MND.Valor as percentual_volume_negocios
 from Cotacao c inner join Media_Diaria m on c.Codigo = m.Codigo and c.Data = m.Data
 inner join Media_Diaria MM21 on c.Codigo = MM21.Codigo and c.Data = MM21.Data and MM21.Tipo = 'MMA' AND MM21.NumPeriodos = 21
@@ -51,7 +54,7 @@ inner join
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
 	and c.Negocios_Total / MND.Valor >= @percentualMinimoVolume
 
-	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+	AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
 
 ) p2
 on p1.codigo = p2.codigo
@@ -74,14 +77,14 @@ AND
 	OR
 	(
 	-- 120% DA MÉDIA AND 75% CANDLE. QUALQUER TENDENCIA
-		p2.percentual_candle <= 0.25 
+		p2.percentual_candle <= 0.5 
 		AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualVolumeRompimento 
 		AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
 	) 
 	OR
 	(
 		-- 130% DO VOLUME DO CANDLE ANTERIOR. QUALQUER TENDENCIA
-		p2.percentual_candle <= 0.25 
+		p2.percentual_candle <= 0.5 
 		AND p2.Titulos_Total / p1.Titulos_Total >= 1.3
 		AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
 	)
@@ -99,9 +102,12 @@ AND
 full outer join
 --PONTO CONTINUO MMA 21
 
-(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia
+(select p2.codigo, p2.percentual_volume_quantidade, p2.percentual_volume_negocios, p2.percentual_candle as percentual_candle2, p2.ValorMinimo, p2.ValorMaximo, p2.MM21, p2.Volatilidade, p2.distancia,
+ROUND((p2.ValorMaximo  * (1 + p2.Volatilidade * 1.5 / 100) / p1.ValorFechamento- 1) * 100, 3) / 10 / p2.Volatilidade as distancia_fechamento_anterior,
+CASE WHEN ROUND(P2.MM21, 2) > ROUND(P1.MM21,2) THEN 'SUBINDO' WHEN ROUND(P2.MM21,2) = ROUND(P1.MM21, 2) THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO
+
 from 
-(select c.codigo, C.ValorMinimo, C.ValorMaximo, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle, MM21.Valor AS MM21, 
+(select c.codigo, C.ValorMinimo, C.ValorMaximo, C.ValorFechamento, c.Titulos_Total, c.Negocios_Total, ((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle, MM21.Valor AS MM21, 
 c.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, C.Negocios_Total / MND.Valor as percentual_volume_negocios
 from Cotacao c inner join Media_Diaria m on c.Codigo = m.Codigo and c.Data = m.Data
 inner join Media_Diaria MM21 on c.Codigo = MM21.Codigo and c.Data = MM21.Data and MM21.Tipo = 'MMA' AND MM21.NumPeriodos = 21
@@ -117,6 +123,7 @@ inner join
 	M.Valor, c.Titulos_Total, c.Negocios_Total, c.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, C.Negocios_Total / MND.Valor as percentual_volume_negocios,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
 	ABS(ROUND((c.ValorMinimo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.5 / 100) / m.Valor - 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor)) as distancia
+
 	from Cotacao c 
 	inner join Media_Diaria m on c.Codigo = m.Codigo and c.Data = m.Data and m.Tipo = 'MMA' AND M.NumPeriodos = 21
 	inner join Media_Diaria MVOL on c.Codigo = MVOL.Codigo and c.Data = MVOL.Data and MVOL.Tipo = 'VMA' AND MVOL.NumPeriodos = 21
@@ -138,8 +145,7 @@ inner join
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
 	and c.Negocios_Total / MND.Valor >= @percentualMinimoVolume
 
-	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
-	AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) >= -1.5
+	AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
 
 ) p2	
 on p1.codigo = p2.codigo
@@ -159,14 +165,14 @@ AND
 	OR
 	(
 	-- 120% DA MÉDIA AND 75% CANDLE. QUALQUER TENDENCIA
-		p2.percentual_candle <= 0.25 
+		p2.percentual_candle <= 0.5 
 		AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualVolumeRompimento 
 		AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
 	) 
 	OR
 	(
 		-- 130% DO VOLUME DO CANDLE ANTERIOR. QUALQUER TENDENCIA
-		p2.percentual_candle <= 0.25 
+		p2.percentual_candle <= 0.5 
 		AND p2.Titulos_Total / p1.Titulos_Total >= 1.3
 		AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
 	)

@@ -1,6 +1,6 @@
 DECLARE 
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0,
-@data1 as date = '2020-3-9', @data2 as date = '2020-3-16', @data3 as date = '2020-3-23'
+@data1 as date = '2020-4-20', @data2 as date = '2020-4-27', @data3 as date = '2020-5-4'
 select p2.codigo, CASE WHEN P3.MM21 > P2.MM21 THEN 'SUBINDO' WHEN P3.MM21 = P2.MM21 THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO,
 ROUND((P3.ValorMaximo  * (1 + P3.Volatilidade * 1.5 / 100) / P2.ValorFechamento - 1) * 100, 3) / 10 / P3.Volatilidade AS distancia_fechamento_anterior
 from 
@@ -38,6 +38,7 @@ LEFT JOIN MediaVolatilidadeSemanal MVLT ON C.Codigo = MVLT.Codigo AND C.DATA = M
 
 WHERE C.Data = @data3
 AND IFR.Valor <= 65
+and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo) --fechou acima da metade do candle
 AND (C.ValorFechamento > M.Valor OR (M.Valor - C.ValorMaximo > C.ValorMaximo - C.ValorMinimo))
 ) as p3
 on p2.codigo = p3.codigo

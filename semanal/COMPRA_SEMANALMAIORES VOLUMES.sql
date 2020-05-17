@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2020-3-16', @dataAtual as datetime = '2020-3-23',
+declare @dataAnterior as datetime = '2020-4-27', @dataAtual as datetime = '2020-5-4',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 SELECT P2.Codigo, P2.Titulos_Total, P1.percentual_volume_quantidade AS PercentualVolume1, p1.percentual_candle as PercentualCandle1, 
@@ -63,7 +63,7 @@ AND (
 		)
 	)
 	--ou volume de negócios e de ações negociadas pelo menos 30% maior que o período anterior
-	OR (p2.Negocios_Total / p1.Negocios_Total >= 1.3 AND p2.Titulos_Total / p1.Titulos_Total >= 1.3)
+	OR (p2.Negocios_Total / p1.Negocios_Total >= 1.2 AND p2.Titulos_Total / p1.Titulos_Total >= 1.2)
 )
 --DISTANCIA PARA MÉDIA DE 21 PERÍODOS NO MÁXIMO 2.5 vezes a volatilidade
 AND ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.25 / 100) / P2.MM21 - 1) * 100, 3) / 10 / P2.Volatilidade <= 2.5
