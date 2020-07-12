@@ -3,7 +3,7 @@ DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume a
 @ifr2Minimo as float = 2, @ifr14Minimo as float = 25
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2020-5-4', @dataFinal as datetime = '2020-5-11'
+DECLARE @dataInicial as datetime = '2020-6-15', @dataFinal as datetime = '2020-6-22'
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle2, pc10.ValorMinimo, pc10.ValorMaximo, 
 ROUND( pc10.MM21, 2) MM21, pc10.Volatilidade, pc10.distancia,

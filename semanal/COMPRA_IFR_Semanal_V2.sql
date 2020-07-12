@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2020-4-27', @dataAtual as datetime = '2020-5-4',
+declare @dataAnterior as datetime = '2020-6-22', @dataAtual as datetime = '2020-6-29',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 
@@ -32,7 +32,7 @@ FROM
 		FROM Cotacao_Semanal C
 		WHERE IFR.Codigo = C.Codigo
 		and C.[Data] = @dataAtual
-		AND C.Sequencial - IFR.Sequencial <= 5
+		AND C.Sequencial - IFR.Sequencial <= 4
 	)
 GROUP BY IFR.CODIGO
 ) as sobrevendido INNER JOIN

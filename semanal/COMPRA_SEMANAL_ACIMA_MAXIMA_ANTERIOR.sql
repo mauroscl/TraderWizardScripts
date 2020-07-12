@@ -1,6 +1,6 @@
 DECLARE 
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0,
-@data1 as date = '2020-4-20', @data2 as date = '2020-4-27', @data3 as date = '2020-5-4'
+@data1 as date = '2020-6-15', @data2 as date = '2020-6-22', @data3 as date = '2020-6-29'
 select p2.codigo, CASE WHEN P3.MM21 > P2.MM21 THEN 'SUBINDO' WHEN P3.MM21 = P2.MM21 THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO,
 ROUND((P3.ValorMaximo  * (1 + P3.Volatilidade * 1.5 / 100) / P2.ValorFechamento - 1) * 100, 3) / 10 / P3.Volatilidade AS distancia_fechamento_anterior
 from 
@@ -26,11 +26,12 @@ on p1.codigo = p2.codigo
 INNER JOIN 
 
 (
-SELECT c.codigo, C.ValorFechamento, C.ValorMinimo, C.ValorMaximo, M.Valor as MM21, C.Titulos_Total, C.Negocios_Total,
+SELECT c.codigo, C.ValorFechamento, C.ValorMinimo, C.ValorMaximo, MM21.Valor as MM21, C.Titulos_Total, C.Negocios_Total,
 dbo.MaxValue(VLT.Valor, MVLT.Valor) as Volatilidade,
 c.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, C.Negocios_Total / MN.Valor as percentual_volume_negocios
 FROM Cotacao_Semanal C INNER JOIN IFR_Semanal IFR ON C.Data = IFR.Data AND C.Codigo = IFR.Codigo AND IFR.NumPeriodos = 14
-INNER JOIN Media_Semanal M ON C.Codigo = M.Codigo AND C.Data = M.Data AND M.NumPeriodos = 21 AND M.Tipo = 'MMA'
+INNER JOIN Media_Semanal MM10 ON C.Codigo = MM10.Codigo AND C.Data = MM10.Data AND MM10.NumPeriodos = 10 AND MM10.Tipo = 'MMA'
+INNER JOIN Media_Semanal MM21 ON C.Codigo = MM21.Codigo AND C.Data = MM21.Data AND MM21.NumPeriodos = 21 AND MM21.Tipo = 'MMA'
 INNER JOIN MediaNegociosSemanal MN on c.Codigo = MN.Codigo and c.Data = MN.Data
 INNER JOIN Media_Semanal MVOL on c.Codigo = MVOL.Codigo and c.Data = MVOL.Data and MVOL.Tipo = 'VMA' AND MVOL.NumPeriodos = 21
 INNER JOIN VolatilidadeSemanal VLT ON C.Codigo = VLT.Codigo AND C.DATA = VLT.Data
@@ -39,7 +40,16 @@ LEFT JOIN MediaVolatilidadeSemanal MVLT ON C.Codigo = MVLT.Codigo AND C.DATA = M
 WHERE C.Data = @data3
 AND IFR.Valor <= 65
 and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo) --fechou acima da metade do candle
-AND (C.ValorFechamento > M.Valor OR (M.Valor - C.ValorMaximo > C.ValorMaximo - C.ValorMinimo))
+AND C.Titulos_Total >= 500000
+
+--remove os candles que se enquadram no ponto continuo
+--AND (
+--  --ABAIXO DA VOLATILIDADE
+--  dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) <= dbo.MinValue(VLT.Valor, MVLT.Valor) / 10
+--  --QUANDO NÃO ESTÁ TOCANDO NEM A MÉDIA DE 10 NEM A MÉDIA DE 21
+--  OR (NOT MM10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo AND NOT MM21.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo)
+--)
+
 ) as p3
 on p2.codigo = p3.codigo
 where 

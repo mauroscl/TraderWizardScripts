@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2020-5-14', @dataAtual as datetime = '2020-5-15',
+declare @dataAnterior as datetime = '2020-7-6', @dataAtual as datetime = '2020-7-7',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 
@@ -44,7 +44,7 @@ INNER JOIN
 	
 
 	AND IFR14.Valor < 80
-	AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+	AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
 
 	--AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) <= 1.5
 

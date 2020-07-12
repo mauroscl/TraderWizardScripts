@@ -1,4 +1,4 @@
-declare @data as datetime = '2020-2-5', @dataAnterior as datetime = '2020-2-4'
+declare @data as datetime = '2020-6-8', @dataAnterior as datetime = '2020-6-5'
 DELETE
 FROM Cotacao
 WHERE DATA >= @data

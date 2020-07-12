@@ -1,4 +1,4 @@
-DECLARE	@data1 as date = '2020-4-27', @data2 as date = '2020-5-4', @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
+DECLARE	@data1 as date = '2020-6-22', @data2 as date = '2020-6-29', @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 select p1.codigo, CASE WHEN P2.MM21 > P1.MM21 THEN 'SUBINDO' WHEN P2.MM21 = P1.MM21 THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO,
 ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P1.ValorFechamento - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_fechamento_anterior
@@ -29,6 +29,15 @@ INNER JOIN
 		where C1.Codigo = C2.Codigo
 		AND C1.Sequencial - C2.Sequencial BETWEEN 1 AND 4
 	)
+	AND ValorMinimo <= 
+	(
+		select MAX(c2.ValorMaximo)
+		from Cotacao_Semanal C2
+		where C1.Codigo = C2.Codigo
+		AND C1.Sequencial - C2.Sequencial BETWEEN 2 AND 5
+	)
+
+
 	AND ROUND((C1.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / M.Valor- 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) <= 2.5
 ) AS p2
 ON p1.Codigo = p2.Codigo

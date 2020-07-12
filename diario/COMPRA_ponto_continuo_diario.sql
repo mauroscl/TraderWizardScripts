@@ -1,6 +1,6 @@
 ----DIARIO
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
-@dataAnterior as datetime = '2020-5-14', @dataAtual as datetime = '2020-5-15',
+@dataAnterior as datetime = '2020-7-6', @dataAtual as datetime = '2020-7-7',
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle_anterior, 

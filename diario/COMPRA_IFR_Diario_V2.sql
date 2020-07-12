@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2020-5-14', @dataAtual as datetime = '2020-5-15',
+declare @dataAnterior as datetime = '2020-7-6', @dataAtual as datetime = '2020-7-7',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 
@@ -124,10 +124,10 @@ FROM
 		) 
 		OR
 		(
-			-- 130% DO VOLUME DO CANDLE ANTERIOR. QUALQUER TENDENCIA
+			-- 120% DO VOLUME DO CANDLE ANTERIOR. QUALQUER TENDENCIA
 			p2.percentual_candle >= 0.75 
-			AND p2.Titulos_Total / p1.Titulos_Total >= 1.2
-			AND p2.Negocios_Total / p1.Negocios_Total >= 1.2
+			AND p2.Titulos_Total / p1.Titulos_Total >= 1.3
+			AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
 		)
 		OR 
 		(
