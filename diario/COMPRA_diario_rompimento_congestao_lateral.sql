@@ -1,17 +1,17 @@
-DECLARE	@data1 as date = '2020-7-6', @data2 as date = '2020-7-7', @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
+DECLARE	@data1 as date = '2020-9-30', @data2 as date = '2020-10-1', @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @precisao as int = 1
 
 select p1.codigo, CASE WHEN P2.MM21 > P1.MM21 THEN 'SUBINDO' WHEN P2.MM21 = P1.MM21 THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO,
 ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P1.ValorFechamento - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_fechamento_anterior
 from 
 (	
-	SELECT c.Codigo, c.ValorMaximo, c.ValorFechamento, C.Titulos_Total, C.Negocios_Total, M.Valor as MM21
+	SELECT c.Codigo, c.ValorMaximo, c.ValorFechamento, C.Titulos_Total, C.Negocios_Total, ROUND(M.Valor, @precisao) as MM21
 	FROM Cotacao C
 	INNER JOIN Media_Diaria M ON C.Codigo = M.Codigo AND C.Data = M.Data AND M.NumPeriodos = 21 AND M.Tipo = 'MMA'
 	WHERE C.Data = @data1
 ) AS p1
 INNER JOIN 
 (
-	select C1.Codigo, C1.ValorFechamento, C1.ValorMinimo, C1.ValorMaximo, C1.Titulos_Total, C1.Negocios_Total, M.Valor as MM21, 
+	select C1.Codigo, C1.ValorFechamento, C1.ValorMinimo, C1.ValorMaximo, C1.Titulos_Total, C1.Negocios_Total, ROUND(M.Valor, @precisao) as MM21, 
 	dbo.MaxValue(VD.Valor, MVD.Valor) as Volatilidade,
 	c1.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, C1.Negocios_Total / MND.Valor as percentual_volume_negocios
 	from Cotacao C1

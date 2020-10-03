@@ -1,6 +1,9 @@
-DECLARE @data1 as datetime = '2020-6-22', @data2 as datetime = '2020-6-29'
+DECLARE @data1 as datetime = '2020-8-10', @data2 as datetime = '2020-8-17', @precisao as int = 2
 
-SELECT SUM(CASE WHEN P2.Valor > P1.VALOR THEN 1 ELSE 0 END) AS SUBINDO, SUM(CASE WHEN P2.Valor < P1.VALOR THEN 1 ELSE 0 END) AS DESCENDO
+SELECT SUM(CASE WHEN ROUND(P2.Valor, @precisao) > ROUND(P1.VALOR, @precisao) THEN 1 ELSE 0 END) AS SUBINDO, 
+SUM(CASE WHEN ROUND(P2.Valor, @precisao) < ROUND(P1.VALOR, @precisao) THEN 1 ELSE 0 END) AS DESCENDO,
+SUM(CASE WHEN ROUND(P2.Valor, @precisao) = ROUND(P1.VALOR, @precisao) THEN 1 ELSE 0 END) AS LATERAL
+
 FROM 
 (select Codigo, valor
 from Media_Semanal
@@ -30,7 +33,7 @@ where data = @data2
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P2
 ON P1.Codigo = P2.Codigo
-WHERE P2.Valor > P1.Valor
+WHERE ROUND(P2.Valor, @precisao) > ROUND(P1.Valor, @precisao)
 
 
 --média descendo
@@ -48,4 +51,4 @@ where data = @data2
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P2
 ON P1.Codigo = P2.Codigo
-WHERE P2.Valor < P1.Valor
+WHERE ROUND(P2.Valor, @precisao) < ROUND(P1.Valor, @precisao)

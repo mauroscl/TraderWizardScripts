@@ -1,6 +1,6 @@
 DECLARE			
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0,
-@data1 as date = '2020-6-24', @data2 as date = '2020-6-25', @data3 as date = '2020-6-26'
+@data1 as date = '2020-8-27', @data2 as date = '2020-8-28', @data3 as date = '2020-8-31'
 select p2.codigo, CASE WHEN ROUND(P2.MM21, 2) > ROUND(P1.MM21,2) THEN 'SUBINDO' WHEN ROUND(P2.MM21,2) = ROUND(P1.MM21, 2) THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO,
 ROUND(ABS( (P3.ValorMinimo  * (1 + P3.Volatilidade * 1.5 / 100) / P2.ValorFechamento - 1) * 100), 3) / 10 / P3.Volatilidade AS distancia_fechamento_anterior
 

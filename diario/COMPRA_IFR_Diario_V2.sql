@@ -1,9 +1,10 @@
-declare @dataAnterior as datetime = '2020-7-6', @dataAtual as datetime = '2020-7-7',
+declare @dataAnterior as datetime = '2020-9-30', @dataAtual as datetime = '2020-10-1',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 
 select sobrevendido.Codigo, Data, atual.percentual_volume_quantidade, atual.percentual_volume_negocios, atual.percentual_candle_anterior, atual.percentual_candle_atual,
-atual.direcao_m21,atual.Oscilacao ,atual.VolatilidadeMaxima, atual.ValorMinimo, atual.ValorMaximo, entrada, saida, entrada * 2 - saida as alvo, atual.MM21
+atual.direcao_m21, atual.distancia_fechamento_anterior
+--,atual.Oscilacao ,atual.VolatilidadeMaxima, atual.ValorMinimo, atual.ValorMaximo, entrada, saida, entrada * 2 - saida as alvo, atual.MM21
 
 FROM
 (
@@ -39,8 +40,9 @@ FROM
 	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume_quantidade, p2.percentual_volume_negocios,
 	p1.percentual_candle as percentual_candle_anterior, p2.percentual_candle percentual_candle_atual,
 	CASE WHEN P2.ValorMM21 > P1.ValorMM21  THEN 'SUBINDO' WHEN P2.ValorMM21 = P1.ValorMM21 THEN 'FLAT' ELSE 'DESCENDO' END AS direcao_m21,
-	p2.ValorMinimo, p2.ValorMaximo, p2.ValorMM21 as MM21, p2.Oscilacao, p2.VolatilidadeMinima, p2.VolatilidadeMaxima, entrada,
-	ROUND((entrada - (entrada - p2.ValorMinimo) * @percentual_candle_para_stop) * (1 - VolatilidadeMaxima * @percentual_volatilidade_para_entrada_saida / 100) , 2) as saida
+	ROUND((p2.ValorMaximo  * (1 + p2.VolatilidadeMaxima * 1.5 / 100) / p1.ValorFechamento- 1) * 100, 3) / 10 / p2.VolatilidadeMaxima as distancia_fechamento_anterior
+	--p2.ValorMinimo, p2.ValorMaximo, p2.ValorMM21 as MM21, p2.Oscilacao, p2.VolatilidadeMinima, p2.VolatilidadeMaxima, entrada,
+	--ROUND((entrada - (entrada - p2.ValorMinimo) * @percentual_candle_para_stop) * (1 - VolatilidadeMaxima * @percentual_volatilidade_para_entrada_saida / 100) , 2) as saida
 
 	from
 	(

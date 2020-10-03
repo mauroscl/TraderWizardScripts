@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2020-7-6', @dataAtual as datetime = '2020-7-7',
+declare @dataAnterior as datetime = '2020-9-30', @dataAtual as datetime = '2020-10-1',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 

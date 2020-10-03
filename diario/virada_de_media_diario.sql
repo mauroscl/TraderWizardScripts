@@ -1,6 +1,6 @@
-declare @d1 as datetime = '2020-4-13', @d2 as datetime = '2020-4-14', @d3 as datetime = '2020-4-15'
+declare @d1 as datetime = '2020-9-29', @d2 as datetime = '2020-9-30', @d3 as datetime = '2020-10-1', @precisao as int = 2
 --papéis que viraram a média PARA BAIXO
-SELECT P1.Codigo
+SELECT P1.Codigo AS PARA_BAIXO
 FROM 
 (select Codigo, valor
 from Media_Diaria
@@ -21,11 +21,11 @@ where data = @d3
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P3
 ON P2.Codigo = P3.Codigo
-WHERE P2.Valor >= P1.Valor
-AND P3.Valor < P2.Valor
+WHERE ROUND(P2.Valor, @precisao) >= ROUND(P1.Valor, @precisao)
+AND ROUND(P3.Valor, @precisao) < ROUND(P2.Valor, @precisao)
 
 --papéis que viraram a média PARA CIMA
-SELECT P1.Codigo
+SELECT P1.Codigo AS PARA_CIMA
 FROM 
 (select Codigo, valor
 from Media_Diaria
@@ -46,5 +46,5 @@ where data = @d3
 and tipo = 'MMA'
 AND NumPeriodos = 21) AS P3
 ON P2.Codigo = P3.Codigo
-WHERE P2.Valor <= P1.Valor
-AND P3.Valor > P2.Valor
+WHERE ROUND(P2.Valor, @precisao) <= ROUND(P1.Valor, @precisao)
+AND ROUND(P3.Valor, @precisao) > ROUND(P2.Valor, @precisao)

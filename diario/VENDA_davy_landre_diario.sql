@@ -2,7 +2,7 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2020-6-24', @d2 as datetime = '2020-6-25', @d3 as datetime = '2020-6-26',
+declare @d1 as datetime = '2020-8-27', @d2 as datetime = '2020-8-28', @d3 as datetime = '2020-8-31',
 @percentualMinimoVolume as float = 0.8--, @percentualDesejadoVolume as float = 1.0
 
 select c3.codigo, C3.percentual_candle, C3.percentual_volume,
@@ -60,7 +60,7 @@ inner join
 
 ON c3.codigo = c2.codigo
 
-where c3.ValorMaximo > c1.ValorMaximo --|menor mínima dos últimos 3 períodos
+where c3.ValorMaximo > c1.ValorMaximo --|maior máxima dos últimos 3 períodos
 and c3.ValorMaximo > c2.ValorMaximo	  --|
 and c3.MM21 < c2.MM21  -- |média descendente
 
