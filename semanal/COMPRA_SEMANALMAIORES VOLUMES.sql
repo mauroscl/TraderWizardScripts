@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2020-9-14', @dataAtual as datetime = '2020-9-21',
+declare @dataAnterior as datetime = '2020-11-30', @dataAtual as datetime = '2020-12-7',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 SELECT P2.Codigo, P2.Titulos_Total, P1.percentual_volume_quantidade AS PercentualVolume1, p1.percentual_candle as PercentualCandle1, 

@@ -1,4 +1,4 @@
-declare @d1 as datetime = '2020-9-29', @d2 as datetime = '2020-9-30', @d3 as datetime = '2020-10-1', @precisao as int = 2
+declare @d1 as datetime = '2020-10-19', @d2 as datetime = '2020-10-20', @d3 as datetime = '2020-10-21', @precisao as int = 2
 --papéis que viraram a média PARA BAIXO
 SELECT P1.Codigo AS PARA_BAIXO
 FROM 
@@ -40,11 +40,18 @@ and tipo = 'MMA'
 AND NumPeriodos = 21) AS P2
 ON P1.Codigo = P2.Codigo
 INNER JOIN 
-(select Codigo, valor
-from Media_Diaria
-where data = @d3
+(select M.Codigo, valor
+from Media_Diaria M 
+INNER JOIN Cotacao C ON M.Codigo = C.Codigo AND M.Data = C.Data
+where M.data = @d3
 and tipo = 'MMA'
-AND NumPeriodos = 21) AS P3
+AND NumPeriodos = 21
+
+AND C.ValorMinimo > M.Valor
+
+) AS P3
 ON P2.Codigo = P3.Codigo
 WHERE ROUND(P2.Valor, @precisao) <= ROUND(P1.Valor, @precisao)
 AND ROUND(P3.Valor, @precisao) > ROUND(P2.Valor, @precisao)
+
+

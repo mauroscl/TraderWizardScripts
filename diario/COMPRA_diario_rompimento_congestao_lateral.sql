@@ -1,7 +1,8 @@
-DECLARE	@data1 as date = '2020-9-30', @data2 as date = '2020-10-1', @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @precisao as int = 1
+DECLARE	@data1 as date = '2020-12-18', @data2 as date = '2020-12-21', @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @precisao as int = 1
 
 select p1.codigo, CASE WHEN P2.MM21 > P1.MM21 THEN 'SUBINDO' WHEN P2.MM21 = P1.MM21 THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO,
-ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P1.ValorFechamento - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_fechamento_anterior
+ROUND((P2.ValorMaximo  * (1 + P2.Volatilidade * 1.5 / 100) / P1.ValorFechamento - 1) * 100, 3) / 10 / P2.Volatilidade AS distancia_fechamento_anterior,
+p2.DataBarraAmpla
 from 
 (	
 	SELECT c.Codigo, c.ValorMaximo, c.ValorFechamento, C.Titulos_Total, C.Negocios_Total, ROUND(M.Valor, @precisao) as MM21
@@ -11,9 +12,21 @@ from
 ) AS p1
 INNER JOIN 
 (
-	select C1.Codigo, C1.ValorFechamento, C1.ValorMinimo, C1.ValorMaximo, C1.Titulos_Total, C1.Negocios_Total, ROUND(M.Valor, @precisao) as MM21, 
+	select C1.Codigo, C1.Sequencial, C1.ValorFechamento, C1.ValorMinimo, C1.ValorMaximo, C1.Titulos_Total, C1.Negocios_Total, ROUND(M.Valor, @precisao) as MM21, 
 	dbo.MaxValue(VD.Valor, MVD.Valor) as Volatilidade,
-	c1.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, C1.Negocios_Total / MND.Valor as percentual_volume_negocios
+	c1.Titulos_Total / MVOL.Valor as percentual_volume_quantidade, C1.Negocios_Total / MND.Valor as percentual_volume_negocios,
+	(
+		SELECT MAX(CVOL.DATA) 
+		FROM COTACAO CVOL
+		INNER JOIN VolatilidadeDiaria VD1 ON C1.Codigo = VD1.Codigo AND C1.DATA = VD1.Data
+		LEFT JOIN MediaVolatilidadeDiaria MVD1 ON C1.Codigo = MVD1.Codigo AND C1.DATA = MVD1.Data
+		WHERE C1.Codigo = CVOL.Codigo
+		AND C1.Sequencial - CVOL.Sequencial >= 4
+		--amplitue maior que 10% volatilidade
+		AND dbo.MaxValue(ABS(CVOL.Oscilacao) / 100, CVOL.ValorMaximo / CVOL.ValorMinimo -1 ) >= dbo.MinValue(VD1.Valor, MVD1.Valor) / 10
+
+	) AS DataBarraAmpla
+
 	from Cotacao C1
 	INNER JOIN Media_Diaria M ON C1.Codigo = M.Codigo AND C1.Data = M.Data AND M.NumPeriodos = 21 AND M.Tipo = 'MMA'
 	INNER JOIN MediaNegociosDiaria MND on C1.Codigo = MND.Codigo and C1.Data = MND.Data
@@ -27,28 +40,33 @@ INNER JOIN
 
 	and (C1.ValorMaximo - c1.ValorFechamento) < (c1.ValorFechamento - c1.ValorMinimo)
 
-	AND ValorFechamento > 
-	(
-		select MAX(c2.ValorMaximo)
-		from Cotacao C2
-		where C1.Codigo = C2.Codigo
-		AND C1.Sequencial - C2.Sequencial BETWEEN 1 AND 4
-	)
-	AND ValorMinimo <=
-	(
-		select MAX(c2.ValorMaximo)
-		from Cotacao C2
-		where C1.Codigo = C2.Codigo
-		AND C1.Sequencial - C2.Sequencial BETWEEN 2 AND 5
-	)
-
-
 	AND ROUND((C1.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) / M.Valor- 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) <= 2.5
 ) AS p2
 ON p1.Codigo = p2.Codigo
 
 WHERE 
-(
+
+	p2.ValorFechamento > 
+	(
+		select ValorMaximo
+		from Cotacao CBA
+		where CBA.Codigo = P2.Codigo 
+		AND CBA.Data = P2.DataBarraAmpla
+		AND NOT EXISTS
+		(
+			select 1
+			from Cotacao C3
+			where C3.Codigo = CBA.Codigo
+			AND C3.Sequencial > CBA.Sequencial
+			AND C3.Sequencial < P2.Sequencial
+			AND (C3.ValorFechamento > CBA.ValorMaximo
+			OR C3.ValorAbertura > CBA.ValorMaximo
+			OR C3.ValorFechamento < CBA.ValorMinimo)
+		)
+
+	)
+
+AND (
 	--media subindo
 	P2.MM21 > P1.MM21 
 	--nao está tocando na média e a distancia do valor maximo para  a média é maior que a amplitude do candle

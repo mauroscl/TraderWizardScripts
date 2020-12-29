@@ -2,11 +2,11 @@
 --inclinação da mm21 para cima
 --minima do último candle menor que a mínima dos outros dois anteriores
 
-declare @d1 as datetime = '2020-8-31', @d2 as datetime = '2020-9-8', @d3 as datetime = '2020-9-14',
+declare @d1 as datetime = '2020-11-23', @d2 as datetime = '2020-11-30', @d3 as datetime = '2020-12-7',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0
 
 select c3.codigo, C3.percentual_candle, C3.percentual_volume,
-ROUND((c3.ValorMaximo  * (1 + c3.Volatilidade * 1.25 / 100) / c3.MM21 - 1) * 100, 3) / 10 / c3.Volatilidade AS distancia,
+ROUND((c3.ValorMaximo  * (1 + c3.Volatilidade * 1.5 / 100) / c3.MM21 - 1) * 100, 3) / 10 / c3.Volatilidade AS distancia,
 c3.ValorMinimo, c3.ValorMaximo, c3.Volatilidade
 from 
 (
@@ -17,7 +17,7 @@ from
 ) as c1
 inner join 
 (
-	select C.Codigo, ValorMinimo, ValorMaximo, m.Valor as MM21, c.Titulos_Total
+	select C.Codigo, ValorMinimo, ValorMaximo, ROUND(m.Valor, 2) as MM21, c.Titulos_Total
 	FROM Cotacao_Semanal C INNER JOIN Media_Semanal M ON C.Codigo = M.Codigo AND C.Data = M.Data AND M.Tipo = 'MMA' AND M.NumPeriodos = 21
 	WHERE C.Data = @d2
 	AND C.ValorFechamento > M.Valor
@@ -25,7 +25,7 @@ inner join
 ON c1.codigo = c2.codigo
 inner join
 (
-	select C.Codigo, ValorMinimo, ValorMaximo, m21.Valor AS MM21, 
+	select C.Codigo, ValorMinimo, ValorMaximo, ROUND(m21.Valor, 2) AS MM21, 
 	ROUND((C.ValorMaximo / M21.Valor - 1) * 100, 3)  AS distancia,
 	c.Titulos_Total, c.Titulos_Total / MVOL.Valor as percentual_volume,
 	((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle, dbo.MaxValue(VD.Valor, MVD.Valor) AS Volatilidade
@@ -34,6 +34,8 @@ inner join
 	INNER JOIN Media_Semanal M21 ON C.Codigo = M21.Codigo AND C.Data = M21.Data AND M21.Tipo = 'MMA' AND M21.NumPeriodos = 21
 	INNER JOIN Media_Semanal M10 ON C.Codigo = M10.Codigo AND C.Data = M10.Data AND M10.Tipo = 'MMA' AND M10.NumPeriodos = 10
 	inner join Media_Semanal MVOL on c.Codigo = MVOL.Codigo and c.Data = MVOL.Data and MVOL.Tipo = 'VMA' AND MVOL.NumPeriodos = 21
+	inner join MediaNegociosSemanal MN on c.Codigo = MN.Codigo and c.Data = MN.Data
+
 	INNER JOIN VolatilidadeSemanal VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
 	LEFT JOIN MediaVolatilidadeSemanal MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
 
@@ -41,12 +43,14 @@ inner join
 	AND C.Titulos_Total >= 500000
 	AND C.Valor_Total >= 5000000
 	AND C.Negocios_Total >= 500
-	AND C.ValorFechamento > M21.Valor
-	AND NOT M21.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
-	AND NOT M10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo
+	AND C.ValorMinimo > M10.Valor
+	AND C.ValorMinimo > M21.Valor
+
 
 	--VOLUME MAIOR OU IGUAL A 80% DA MÉDIA DO VOLUME
 	AND c.Titulos_Total / MVOL.Valor >= @percentualMinimoVolume
+	AND c.Negocios_Total / MN.Valor >= @percentualMinimoVolume
+
 	--FECHOU ACIMA DA METADE DA AMPLITUDE
 	--AND C.valorfechamento > (C.valorminimo + Round((C.valormaximo - C.valorminimo) / 2,2))
 
@@ -59,10 +63,10 @@ ON c3.codigo = c2.codigo
 
 where c3.ValorMinimo < c1.ValorMinimo --|menor mínima dos últimos 3 períodos
 and c3.ValorMinimo < c2.ValorMinimo	  --|
-and c2.MM21 < c3.MM21 --média ascedente
+and c2.MM21 < c3.MM21 --média ascendente
 
 --distância do ponto de entrada para a média de 21 nao é mais do que 2,5 x a volatilidade
-AND ROUND((c3.ValorMaximo  * (1 + c3.Volatilidade * 1.25 / 100) / c3.MM21 - 1) * 100, 3) / 10 / c3.Volatilidade <= 2.5
+AND ROUND((c3.ValorMaximo  * (1 + c3.Volatilidade * 1.5 / 100) / c3.MM21 - 1) * 100, 3) / 10 / c3.Volatilidade <= 2.5
 
 --amplitude do candle maior que a amplitude do candle anterior
 --AND (C3.ValorMaximo - C3.ValorMinimo) > (C2.ValorMaximo - C2.ValorMinimo)
