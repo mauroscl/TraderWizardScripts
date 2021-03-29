@@ -1,4 +1,4 @@
-declare @codigo AS varchar(6) = 'APER3', @data as datetime = '2018-10-15'
+declare @codigo AS varchar(6) = 'MATB11', @data as datetime = '2018-10-15'
 DELETE
 FROM Cotacao
 WHERE DATA >= @data

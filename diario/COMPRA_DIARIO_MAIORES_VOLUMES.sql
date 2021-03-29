@@ -1,4 +1,4 @@
-declare @dataAnterior as datetime = '2020-12-18', @dataAtual as datetime = '2020-12-21',
+declare @dataAnterior as datetime = '2021-3-25', @dataAtual as datetime = '2021-3-26',
 @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume as float = 1.0, @percentualDesejadoVolume as float = 1.2
 
 
@@ -51,7 +51,7 @@ INNER JOIN
 ) AS P2
 ON P1.Codigo = P2.Codigo
 WHERE NOT ((P2.ValorMinimo BETWEEN P1.ValorMinimo AND P1.ValorMaximo) AND (P2.ValorMaximo BETWEEN P1.ValorMinimo AND P1.ValorMaximo)) 
---AND P2.MM21 > P1.MM21
+AND P2.MM21 > P1.MM21
 AND (
 	(dbo.MinValue(P2.percentual_volume_quantidade, p2.percentual_volume_negocios) >= @percentualIntermediarioVolume
 	AND	(

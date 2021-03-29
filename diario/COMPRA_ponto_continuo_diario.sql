@@ -1,6 +1,6 @@
 ----DIARIO
 DECLARE @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
-@dataAnterior as datetime = '2020-12-18', @dataAtual as datetime = '2020-12-21',
+@dataAnterior as datetime = '2021-3-25', @dataAtual as datetime = '2021-3-26',
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_volume_negocios, pc10.percentual_candle_anterior, 
@@ -68,8 +68,8 @@ WHERE
 --FECHOU ACIMA DA MÉDIA OU ACIMA DA MÁXIMA DO CANDLE ANTERIOR
 
 (p2.ValorFechamento > p2.MM10 OR P2.ValorFechamento > P1.ValorMaximo)
---evitar segundo candle com sombra acima do candle anterior
-AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
+--evitar segundo candle com sombra acima do candle anterior (COMENTADO EM 21/02/2021)
+--AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
 
 and p2.distancia_mm21 <= 2.5
 

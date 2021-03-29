@@ -2,14 +2,15 @@ declare @datap0 as datetime = '2021-3-24', @dataAnterior as datetime = '2021-3-2
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.1,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 
-select sobrevendido.Codigo, Data, atual.percentual_volume_quantidade, atual.percentual_volume_negocios, atual.percentual_candle_anterior, atual.percentual_candle_atual, 
+select sobrevendido.Codigo, sobrevendido.Data, atual.percentual_volume_quantidade, atual.percentual_volume_negocios, atual.percentual_candle_anterior, atual.percentual_candle_atual, 
 atual.amplitude_anterior, atual.amplitude_atual,atual.direcao_m21, atual.distancia_fechamento_anterior
 
 --,atual.Oscilacao ,atual.VolatilidadeMaxima, atual.ValorMinimo, atual.ValorMaximo, entrada, saida, entrada * 2 - saida as alvo, atual.MM21
 
 FROM
 (
-	SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA, MAX(IFR.ValorFechamento) as ValorFechamento
+	
+	SELECT IFR.CODIGO, MAX(IFR.DATA) AS DATA
 	FROM	
 	(
 		SELECT IFR.CODIGO, IFR.DATA, C.Sequencial, C.ValorFechamento
@@ -24,15 +25,6 @@ FROM
 		WHERE IFR.NumPeriodos = 14
 		AND IFR.Valor <= 35
 	) IFR
-	WHERE EXISTS 
-	(
-		SELECT 1 
-		FROM Cotacao C
-		WHERE IFR.Codigo = C.Codigo
-		and C.[Data] = @dataAtual
-		AND C.Sequencial - IFR.Sequencial <= 5
-		
-	)
 	GROUP BY IFR.CODIGO
 ) as sobrevendido INNER JOIN
 (
@@ -67,11 +59,12 @@ FROM
 		INNER JOIN VolatilidadeDiaria VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
 		LEFT JOIN MediaVolatilidadeDiaria MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
 
-		where c.Data = @dataAnterior) as p1
+		where c.Data = @dataAnterior
+	) as p1
 
 		on p0.Codigo = p1.Codigo
 
-		inner join
+	inner join
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, C.Oscilacao, 
 		dbo.MinValue(VD.Valor, MVD.Valor) AS VolatilidadeMinima , dbo.MaxValue(VD.Valor, MVD.Valor) AS VolatilidadeMaxima,
@@ -105,9 +98,6 @@ FROM
 		--AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) <= 1.5
 
 		and ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.5 / 100) / mm21.Valor- 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) <=2.5
-
-
-
 
 	) as p2
 	on p1.Codigo = p2.Codigo
@@ -159,8 +149,17 @@ FROM
 	)
 ) as atual on sobrevendido.Codigo = atual.Codigo
 
-WHERE ROUND((atual.ValorMaximo /* * (1 + atual.VolatilidadeMaxima * 1.5 / 100) */ / sobrevendido.ValorFechamento - 1) * 100, 3) / 10 / atual.VolatilidadeMaxima <= 1.75
+inner join Cotacao cotacao_sobrevendida
+on sobrevendido.Codigo = cotacao_sobrevendida.Codigo
+and sobrevendido.DATA = cotacao_sobrevendida.Data
+WHERE (SELECT COUNT(1) 
+FROM Cotacao cotacao_posterior
+WHERE cotacao_posterior.Codigo = cotacao_sobrevendida.Codigo
+and cotacao_posterior.Data > = cotacao_sobrevendida.Data
+and cotacao_posterior.ValorFechamento > cotacao_sobrevendida.ValorMaximo
+) <= 1
 
-order by Data desc, percentual_volume_quantidade desc
+
+order by sobrevendido.Data desc, percentual_volume_quantidade desc
 
 

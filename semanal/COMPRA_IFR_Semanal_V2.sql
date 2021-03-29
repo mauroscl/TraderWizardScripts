@@ -1,10 +1,10 @@
-declare @dataAnterior as datetime = '2020-11-30', @dataAtual as datetime = '2020-12-7',
+declare @dataAnterior as datetime = '2021-3-15', @dataAtual as datetime = '2021-3-22',
 @percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0, @percentualVolumeRompimento as float = 1.2,
 @percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 
 
 select sobrevendido.Codigo, Data, atual.percentual_volume_quantidade, atual.percentual_volume_negocios, atual.percentual_candle_anterior, atual.percentual_candle_atual,
-atual.VolatilidadeMaxima, atual.ValorMinimo, atual.ValorMaximo, entrada, saida, entrada * 2 - saida as alvo
+atual.VolatilidadeMaxima, atual.ValorMinimo, atual.ValorMaximo, atual.direcao_m21, atual.distancia_fechamento_anterior
 
 FROM
 (
@@ -16,14 +16,12 @@ FROM
 		INNER JOIN Cotacao_Semanal C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
 		WHERE IFR.NumPeriodos = 2
 		AND IFR.Valor <= 10
-		AND IFR.CODIGO NOT LIKE '%34'
 		UNION
 		SELECT IFR.CODIGO, IFR.DATA, C.Sequencial
 		FROM IFR_Semanal IFR
 		INNER JOIN Cotacao_Semanal C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
 		WHERE IFR.NumPeriodos = 14
 		AND IFR.Valor <= 35
-		AND IFR.CODIGO NOT LIKE '%34'
 	) IFR
 
 	WHERE EXISTS 
@@ -40,8 +38,10 @@ GROUP BY IFR.CODIGO
 	--ESTA PROJECAO RETORNA OS ATIVOS NO ÚLTIMO PERÍODO
 	select p1.Codigo, P1.ValorMM21 as mm21anterior, p2.ValorMM21, p2.percentual_volume_quantidade, p2.percentual_volume_negocios,
 	p1.percentual_candle percentual_candle_anterior,  p2.percentual_candle percentual_candle_atual,
-	p2.ValorMinimo, p2.ValorMaximo, P1.VolatilidadeMinima, p2.VolatilidadeMaxima, entrada,
-	ROUND((entrada - (entrada - p2.ValorMinimo) * @percentual_candle_para_stop) * (1 - VolatilidadeMaxima * @percentual_volatilidade_para_entrada_saida / 100) , 2) as saida
+	p2.ValorMinimo, p2.ValorMaximo, P1.VolatilidadeMinima, p2.VolatilidadeMaxima,
+	CASE WHEN P2.ValorMM21 > P1.ValorMM21  THEN 'SUBINDO' WHEN P2.ValorMM21 = P1.ValorMM21 THEN 'FLAT' ELSE 'DESCENDO' END AS direcao_m21,
+	ROUND((p2.ValorMaximo  * (1 + p2.VolatilidadeMaxima * 1.5 / 100) / p1.ValorFechamento- 1) * 100, 3) / 10 / p2.VolatilidadeMaxima as distancia_fechamento_anterior
+
 	from
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, c.Titulos_Total, c.Negocios_Total,
@@ -63,8 +63,7 @@ GROUP BY IFR.CODIGO
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, dbo.MaxValue(VS.Valor, MVS.Valor) AS VolatilidadeMaxima,
 		ROUND(mm21.Valor, 2) as ValorMM21, c.Titulos_Total, c.Negocios_Total, (c.Titulos_Total / mvol.Valor) as percentual_volume_quantidade,
 		C.Negocios_Total / MNS.Valor as percentual_volume_negocios,
-		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
-		ROUND(c.ValorMaximo  * (1 + dbo.MaxValue(VS.Valor, MVS.Valor) * @percentual_volatilidade_para_entrada_saida / 100) , 2) as entrada
+		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle
 		from Cotacao_Semanal c 
 		inner join Media_Semanal mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
 		inner join Media_Semanal mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
@@ -76,7 +75,8 @@ GROUP BY IFR.CODIGO
 		--fechou acima da metade do candle
 		and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo)
 		--amplitude do candle maior que 10% da volatilidade
-		AND (C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VS.Valor, MVS.Valor) / 10
+		AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VS.Valor, MVS.Valor) / 10
+
 		AND C.Negocios_Total >= 500
 		AND C.Titulos_Total >=500000
 		AND C.Valor_Total >= 5000000
@@ -112,14 +112,15 @@ GROUP BY IFR.CODIGO
 
 			(
 			-- 120% DA MÉDIA AND 75% CANDLE. QUALQUER TENDENCIA
-				p2.percentual_candle >= 0.75 
+				p2.percentual_candle >= 0.7 
 				AND dbo.MaxValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualVolumeRompimento 
 				AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
 			) 
 			OR
 			(
 				-- 130% DO CANDLE ANTERIOR. QUALQUER TENDENCIA
-				p2.Titulos_Total / p1.Titulos_Total >= 1.3
+				p2.percentual_candle >= 0.7 
+				AND p2.Titulos_Total / p1.Titulos_Total >= 1.3
 				AND p2.Negocios_Total / p1.Negocios_Total >= 1.3
 			)
 			OR 

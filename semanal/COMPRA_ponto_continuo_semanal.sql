@@ -3,7 +3,7 @@ DECLARE @percentualMinimoVolume as float = 0.8, @percentualIntermediarioVolume a
 @ifr2Maximo as float = 98, @ifr14Maximo as float = 75
 
 --PONTO CONTINIUO (10)
-DECLARE @dataInicial as datetime = '2020-11-30', @dataFinal as datetime = '2020-12-7'
+DECLARE @dataInicial as datetime = '2021-3-15', @dataFinal as datetime = '2021-3-22'
 
 select pc10.codigo pc10, pc10.percentual_volume_quantidade, pc10.percentual_candle2,pc10.distancia_mm21, pc10.distancia_fechamento_anterior,
 pc21.codigo as pc21, pc21.percentual_volume_quantidade, pc21.percentual_candle2,pc21.distancia_mm21, pc21.distancia_fechamento_anterior
@@ -144,7 +144,7 @@ on p1.codigo = p2.codigo
 WHERE 
 (p2.ValorFechamento > p2.MM21 OR P2.ValorFechamento > P1.ValorMinimo)
 --evitar segundo candle com sombra acima do candle anterior
-AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
+--AND NOT P1.ValorMaximo BETWEEN P2.ValorFechamento AND P2.ValorMaximo
 
 --quando amplitude do movimento anterior (p1) for maior que a volatilidade, se o movimento for negativo, o candle de p2 deve fechar acima da máxima de p1
 AND
