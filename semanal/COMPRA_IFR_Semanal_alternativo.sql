@@ -1,11 +1,10 @@
-declare @datap0 as datetime = '2021-10-11', @dataAnterior as datetime = '2021-10-13', @dataAtual as datetime = '2021-10-14',
-@percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 0.9, @percentualVolumeRompimento as float = 1
+declare @datap0 as datetime = '2021-9-20', @dataAnterior as datetime = '2021-9-27', @dataAtual as datetime = '2021-10-4',
+@percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 0.9, @percentualVolumeRompimento as float = 0.9,
+@percentual_candle_para_stop as float = 1.25, @percentual_volatilidade_para_entrada_saida as float = 1.5
 
 select sobrevendido.Codigo, sobrevendido.Data/*, atual.percentual_volume_quantidade, atual.percentual_volume_negocios, atual.percentual_candle_anterior */
 , atual.percentual_candle_abertura, atual.percentual_candle_fechamento, 
 atual.amplitude_anterior, atual.amplitude_atual,atual.direcao_m21, atual.distancia_fechamento_anterior
-
---,atual.Oscilacao ,atual.VolatilidadeMaxima, atual.ValorMinimo, atual.ValorMaximo, entrada, saida, entrada * 2 - saida as alvo, atual.MM21
 
 FROM
 (
@@ -14,14 +13,14 @@ FROM
 	FROM	
 	(
 		SELECT IFR.CODIGO, IFR.DATA, C.Sequencial, C.ValorFechamento
-		FROM IFR_DIARIO IFR
-		INNER JOIN COTACAO C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
+		FROM IFR_Semanal IFR
+		INNER JOIN Cotacao_Semanal C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
 		WHERE IFR.NumPeriodos = 2
 		AND IFR.Valor <= 10
 		UNION
 		SELECT IFR.CODIGO, IFR.DATA, C.Sequencial, C.ValorFechamento
-		FROM IFR_DIARIO IFR
-		INNER JOIN COTACAO C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
+		FROM IFR_Semanal IFR
+		INNER JOIN Cotacao_Semanal C ON IFR.CODIGO =  C.CODIGO AND IFR.DATA = C.DATA
 		WHERE IFR.NumPeriodos = 14
 		AND IFR.Valor <= 35
 	) IFR
@@ -30,7 +29,7 @@ FROM
 (
 	select p1.Codigo, p2.ValorMM21, ROUND( (P2.ValorMaximo - P2.ValorMinimo) + P2.ValorMaximo, 2) as AlvoAproximado1, 
 	ROUND((P2.ValorMaximo - P2.ValorMinimo) * 1.5 + P2.ValorMaximo, 2) as AlvoAproximado2, p2.percentual_volume_quantidade, p2.percentual_volume_negocios,
-	p1.percentual_candle_fechamento as percentual_candle_anterior, p2.percentual_candle_abertura, p2.percentual_candle_fechamento,
+	p1.percentual_candle as percentual_candle_anterior, p2.percentual_candle_abertura, p2.percentual_candle_fechamento,
 	CASE WHEN P2.ValorMM21 > P1.ValorMM21  THEN 'SUBINDO' WHEN P2.ValorMM21 = P1.ValorMM21 THEN 'FLAT' ELSE 'DESCENDO' END AS direcao_m21,
 	ROUND((p2.ValorMaximo  * (1 + p2.VolatilidadeMaxima * 1.5 / 100) / p1.ValorFechamento- 1) * 100, 3) / 10 / p2.VolatilidadeMaxima as distancia_fechamento_anterior,
 	(dbo.MaxValue(p0.ValorFechamento, p1.ValorMaximo) / dbo.MinValue(p0.ValorFechamento, p1.ValorMinimo) - 1) * 100 as amplitude_anterior, 
@@ -41,23 +40,23 @@ FROM
 
 	from
 	( select Codigo, ValorMinimo, ValorMaximo, ValorFechamento
-		from Cotacao
+		from Cotacao_Semanal
 		where data = @datap0
 	) as p0
 	inner join 
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, c.Titulos_Total, c.Negocios_Total,
-		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle_fechamento,
+		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle,
 		ROUND(mm21.Valor, 2) as ValorMM21,
 		C.Titulos_Total / mvol.Valor as percentual_volume_quantidade,
-		C.Negocios_Total / MND.Valor as percentual_volume_negocios,
-		dbo.MinValue(VD.Valor, MVD.Valor) AS VolatilidadeMinima
-		from cotacao c
-		inner join Media_Diaria mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
-		inner join Media_Diaria mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
-		inner join MediaNegociosDiaria MND on c.Codigo = MND.Codigo and c.Data = MND.Data
-		INNER JOIN VolatilidadeDiaria VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
-		LEFT JOIN MediaVolatilidadeDiaria MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
+		C.Negocios_Total / MN.Valor as percentual_volume_negocios,
+		dbo.MinValue(VOLAT.Valor, MVOLAT.Valor) AS VolatilidadeMinima
+		from Cotacao_Semanal c
+		inner join Media_Semanal mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
+		inner join Media_Semanal mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
+		inner join MediaNegociosSemanal MN on c.Codigo = MN.Codigo and c.Data = MN.Data
+		INNER JOIN MediaVolatilidadeSemanal VOLAT ON C.Codigo = VOLAT.Codigo AND C.DATA = VOLAT.Data
+		LEFT JOIN MediaVolatilidadeSemanal MVOLAT ON C.Codigo = MVOLAT.Codigo AND C.DATA = MVOLAT.Data
 
 		where c.Data = @dataAnterior
 	) as p1
@@ -67,20 +66,20 @@ FROM
 	inner join
 	(
 		select c.Codigo, c.ValorMinimo, c.ValorMaximo, c.ValorFechamento, C.Oscilacao, 
-		dbo.MinValue(VD.Valor, MVD.Valor) AS VolatilidadeMinima , dbo.MaxValue(VD.Valor, MVD.Valor) AS VolatilidadeMaxima,
+		dbo.MinValue(VOLAT.Valor, MVOLAT.Valor) AS VolatilidadeMinima , dbo.MaxValue(VOLAT.Valor, MVOLAT.Valor) AS VolatilidadeMaxima,
 		ROUND(mm21.Valor, 2) as ValorMM21, c.Titulos_Total, c.Negocios_Total,
 		C.Titulos_Total / mvol.Valor as percentual_volume_quantidade,
-		C.Negocios_Total / MND.Valor as percentual_volume_negocios,
+		C.Negocios_Total / MN.Valor as percentual_volume_negocios,
 		((C.ValorAbertura - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle_abertura,
 		((C.ValorFechamento - C.ValorMinimo) / (C.ValorMaximo - C.ValorMinimo)) as percentual_candle_fechamento,
-		ROUND(c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.25 / 100) , 2) as entrada
-
-		from cotacao c
-		inner join Media_Diaria mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
-		inner join Media_Diaria mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
-		inner join MediaNegociosDiaria MND on c.Codigo = MND.Codigo and c.Data = MND.Data
-		INNER JOIN VolatilidadeDiaria VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
-		LEFT JOIN MediaVolatilidadeDiaria MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
+		ROUND(c.ValorMaximo  * (1 + dbo.MaxValue(VOLAT.Valor, MVOLAT.Valor) * 1.25 / 100) , 2) as entrada
+		
+		from Cotacao_Semanal c
+		inner join Media_Semanal mm21 on c.Codigo = mm21.Codigo and c.Data = mm21.Data and mm21.Tipo = 'MMA' and mm21.NumPeriodos = 21
+		inner join Media_Semanal mvol on c.Codigo = mvol.Codigo and c.Data = mvol.Data and mvol.Tipo = 'VMA' and mvol.NumPeriodos = 21
+		inner join MediaNegociosSemanal MN on c.Codigo = MN.Codigo and c.Data = MN.Data
+		INNER JOIN VolatilidadeSemanal VOLAT ON C.Codigo = VOLAT.Codigo AND C.DATA = VOLAT.Data
+		LEFT JOIN MediaVolatilidadeSemanal MVOLAT ON C.Codigo = MVOLAT.Codigo AND C.DATA = MVOLAT.Data
 
 		where c.Data = @dataAtual
 		--fechou acima da metade do candle
@@ -93,12 +92,12 @@ FROM
 		AND C.Valor_Total >= 1000000
 		and c.ValorFechamento >= 1
 
-		AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+		AND dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) >= dbo.MinValue(VOLAT.Valor, MVOLAT.Valor) / 10
 
 
 		--AND (C.Oscilacao / 100) / (dbo.MaxValue(VD.Valor, MVD.Valor) / 10) <= 1.5
 
-		and ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.5 / 100) / mm21.Valor- 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) <=2.5
+		and ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VOLAT.Valor, mvolat.Valor) * 1.5 / 100) / mm21.Valor- 1) * 100, 3) / 10 / dbo.MaxValue(VOLAT.Valor, MVOLAT.Valor) <=2.5
 
 	) as p2
 	on p1.Codigo = p2.Codigo
@@ -143,7 +142,7 @@ FROM
 		OR 
 		(
 			-- DOIS CANDLE COM VOLUME INTERMEDIARIO E CANDLE 50%. QUALQUER TENDENCIA
-			p1.percentual_candle_fechamento >= 0.5 and p2.percentual_candle_fechamento >= 0.5
+			p1.percentual_candle >= 0.5 and p2.percentual_candle_fechamento >= 0.5
 			AND dbo.MinValue(P1.percentual_volume_quantidade, P1.percentual_volume_negocios) >= @percentualDesejadoVolume
 			AND dbo.MinValue(P2.percentual_volume_quantidade, P2.percentual_volume_negocios) >= @percentualDesejadoVolume
 		)
@@ -151,11 +150,11 @@ FROM
 	)
 ) as atual on sobrevendido.Codigo = atual.Codigo
 
-inner join Cotacao cotacao_sobrevendida
+inner join Cotacao_Semanal cotacao_sobrevendida
 on sobrevendido.Codigo = cotacao_sobrevendida.Codigo
 and sobrevendido.DATA = cotacao_sobrevendida.Data
 WHERE (SELECT COUNT(1) 
-FROM Cotacao cotacao_posterior
+FROM Cotacao_Semanal cotacao_posterior
 WHERE cotacao_posterior.Codigo = cotacao_sobrevendida.Codigo
 and cotacao_posterior.Data >= cotacao_sobrevendida.Data
 and cotacao_posterior.Data <= @dataAtual

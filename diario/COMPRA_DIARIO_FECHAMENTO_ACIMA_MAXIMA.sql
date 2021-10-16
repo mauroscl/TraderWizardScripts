@@ -1,6 +1,6 @@
 DECLARE			
-@percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 1.0,
-@data1 as date = '2021-3-24', @data2 as date = '2021-3-25', @data3 as date = '2021-3-26'
+@percentualMinimoVolume as float = 0.8, @percentualDesejadoVolume as float = 0.9,
+@data1 as date = '2021-10-11', @data2 as date = '2021-10-13', @data3 as date = '2021-10-14'
 select p2.codigo, CASE WHEN P3.MM21 > P2.MM21 THEN 'SUBINDO' WHEN P3.MM21 = P2.MM21 THEN 'LATERAL' ELSE 'DESCENDO' END AS INCLINACAO,
 ROUND((P3.ValorMaximo  * (1 + P3.Volatilidade * 1.5 / 100) / P2.ValorFechamento - 1) * 100, 3) / 10 / P3.Volatilidade AS distancia_fechamento_anterior
 
@@ -36,18 +36,22 @@ INNER JOIN VolatilidadeDiaria VD ON C.Codigo = VD.Codigo AND C.DATA = VD.Data
 LEFT JOIN MediaVolatilidadeDiaria MVD ON C.Codigo = MVD.Codigo AND C.DATA = MVD.Data
 
 where C.Data = @data3
-AND IFR.Valor <= 70
+--AND IFR.Valor <= 65
+AND C.Negocios_Total >= 100
+AND C.Titulos_Total >=100000
+AND C.Valor_Total >= 1000000
+
 and (c.ValorMaximo - c.ValorFechamento) < (c.ValorFechamento - c.ValorMinimo) --fechou acima da metade do candle
 
 AND ROUND((c.ValorMaximo  * (1 + dbo.MaxValue(VD.Valor, MVD.Valor) * 1.5 / 100) / MM21.Valor- 1) * 100, 3) / 10 / dbo.MaxValue(VD.Valor, MVD.Valor) <= 2.5
 
 --remove os candles que se enquadram no ponto continuo
---AND (
---  --ABAIXO DA VOLATILIDADE
---  dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) <= dbo.MinValue(VD.Valor, MVD.Valor) / 10
---  --QUANDO NÃO ESTÁ TOCANDO NEM A MÉDIA DE 10 NEM A MÉDIA DE 21
---  OR (NOT MM10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo AND NOT MM21.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo)
---)
+AND (
+  --ABAIXO DA VOLATILIDADE
+  dbo.MaxValue(ABS(C.Oscilacao) / 100, C.ValorMaximo / C.ValorMinimo -1 ) <= dbo.MinValue(VD.Valor, MVD.Valor) / 10
+  --QUANDO NÃO ESTÁ TOCANDO NEM A MÉDIA DE 10 NEM A MÉDIA DE 21
+  OR (NOT MM10.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo AND NOT MM21.Valor BETWEEN C.ValorMinimo AND C.ValorMaximo)
+)
 
 ) as p3
 
@@ -70,11 +74,11 @@ AND
 	--media subindo
 	P3.MM21 > P2.MM21 
 	--nao está tocando na média e a distancia do valor maximo para  a média é maior que a amplitude do candle
-	OR (
+/*	OR (
 	NOT P3.MM21 BETWEEN P3.ValorMinimo AND P3.ValorMaximo AND (p3.MM21 - P3.ValorMaximo > P3.ValorMaximo - P3.ValorMinimo)
 	)
 	-- mais da metade do candle está acima da média
-	OR (P3.ValorMaximo - P3.MM21 > P3.MM21 - P3.ValorMinimo )
+	OR (P3.ValorMaximo - P3.MM21 > P3.MM21 - P3.ValorMinimo )*/
 )
 
 AND (

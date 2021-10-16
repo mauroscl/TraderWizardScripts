@@ -1,4 +1,4 @@
-DECLARE @data1 as datetime = '2021-3-11', @data2 as datetime = '2021-3-12', @precisao as int = 2
+DECLARE @data1 as datetime = '2021-10-4', @data2 as datetime = '2021-10-5', @precisao as int = 2
 
 SELECT SUM(CASE WHEN ROUND(P2.Valor, @precisao) > ROUND(P1.VALOR, @precisao) THEN 1 ELSE 0 END) AS SUBINDO, 
 SUM(CASE WHEN ROUND(P2.Valor, @precisao) < ROUND(P1.VALOR, @precisao) THEN 1 ELSE 0 END) AS DESCENDO,
